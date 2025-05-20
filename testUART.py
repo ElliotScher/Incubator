@@ -13,6 +13,4 @@ print("Sent:", test_string.strip())
 # Wait for a response
 while(True):
     response = ser.read(len(test_string))
-    if response.decode() == test_string:
-        print("Received:", response.decode().strip())
-        break
+    print("Received:", response.decode().strip())
