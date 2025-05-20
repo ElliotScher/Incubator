@@ -8,9 +8,11 @@ time.sleep(2)
 test_string = "ping\n"
 ser.write(test_string.encode())
 
-# Wait for a response
-time.sleep(0.1)
-response = ser.read(len(test_string))
-
 print("Sent:", test_string.strip())
-print("Received:", response.decode().strip())
+
+# Wait for a response
+while(True):
+    response = ser.read(len(test_string))
+    if response.decode() == test_string:
+        print("Received:", response.decode().strip())
+        break
