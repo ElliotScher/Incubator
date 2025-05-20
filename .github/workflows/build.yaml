@@ -13,7 +13,7 @@ jobs:
           python-version: '3.10'
       - run: pip install pyinstaller
       - run: pyinstaller --onefile --windowed main.py
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3.1.3
         with:
           name: windows-exe
           path: dist/main.exe
@@ -28,7 +28,7 @@ jobs:
           python-version: '3.10'
       - run: pip install pyinstaller
       - run: pyinstaller --onefile --windowed main.py
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3.1.3
         with:
           name: linux-bin
           path: dist/main
@@ -43,7 +43,7 @@ jobs:
           python-version: '3.10'
       - run: pip install pyinstaller
       - run: pyinstaller --onefile --windowed main.py
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3.1.3
         with:
           name: macos-bin
           path: dist/main
