@@ -8,7 +8,9 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Cam's Project")
-        self.geometry("800x600")
+        self.geometry("1920x1080")
+        self.minsize(1920, 1080)
+        self.maxsize(1920, 1080)
 
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
