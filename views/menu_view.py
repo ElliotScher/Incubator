@@ -19,4 +19,3 @@ class MenuView(tk.Frame):
         button.pack()
         button2.pack()
         button3.pack()
-
