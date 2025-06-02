@@ -1,7 +1,9 @@
 import tkinter as tk
 import tksheet
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 from util.calibration.calibration_session import CalibrationSession
+import numpy as np
 class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -58,23 +60,13 @@ class CalibrationView(tk.Frame):
         info_label.config(font=("Arial", 12))
         button.config(font=("Arial", 12), width=10, height=2)
 
-        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration)
+        run_button = tk.Button(self, text="Run Calibration", command=lambda: self.run_calibration_from_json())
         run_button.pack(side='top', anchor='e', pady=10)
         run_button.config(font=("Arial", 12), width=16, height=2)
 
         # Create a frame to hold the graph on the right half
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
-
-        # Assume the controller has a calibration_session attribute with a .figure (matplotlib Figure)
-        self.calibration_session = getattr(controller, "calibration_session", None)
-        if self.calibration_session and hasattr(self.calibration_session, "figure"):
-            self.canvas = FigureCanvasTkAgg(self.calibration_session.figure, master=right_frame)
-            self.canvas.draw()
-            self.canvas.get_tk_widget().pack(fill="both", expand=True)
-        else:
-            placeholder_label = tk.Label(right_frame, text="No calibration graph available.", font=("Arial", 14))
-            placeholder_label.pack(expand=True)
 
     def delete_row(self):
         selected_rows = self.sheet.get_selected_rows()
@@ -99,3 +91,26 @@ class CalibrationView(tk.Frame):
         # Retrieve data from the sheet
         data = self.sheet.get_sheet_data()
         self.calibration_session = CalibrationSession(data)
+        # yada yada yada ...
+
+    def run_calibration_from_json(self):
+        self.calibration_session = CalibrationSession(None)
+        graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
+
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.scatter(graph_V, graph_OD, color='blue')
+        a, b = log.a, log.b
+        x_fit = np.linspace(min(graph_V), max(graph_V), 200)
+        y_fit = a * np.log(x_fit) + b
+        ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+        ax.legend()
+        for i, label in enumerate(graph_channels):
+            ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5,5), ha='left', fontsize=10)
+        ax.set_xlabel("Voltage")
+        ax.set_ylabel("Optical Density")
+        ax.set_title("Calibration: Voltage vs Optical Density")
+        ax.grid(True)
+
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
