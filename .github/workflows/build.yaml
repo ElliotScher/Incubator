@@ -3,27 +3,6 @@ name: Build All Platforms
 on: [push, pull_request]
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: pip install -r requirements.txt
-      - run: pyinstaller main.py \
-                        --add-data "util\calibration\test_calibration.json;util\calibration" \
-                        --onefile \
-                        --windowed \
-                        --hidden-import=tkinter \
-                        --hidden-import=matplotlib.backends.backend_tkagg \
-                        --hidden-import=PIL._tkinter_finder
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: dist/main.exe
-
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -37,19 +16,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux-bin
-          path: dist/main
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: pip install -r requirements.txt
-      - run: ./build.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos-bin
           path: dist/main
