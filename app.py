@@ -1,4 +1,5 @@
 import tkinter as tk
+import time
 from views.menu_view import MenuView
 from views.calibration_view import CalibrationView
 from views.connection_view import ConnectionView
@@ -19,7 +20,7 @@ class App(tk.Tk):
 
         self.frames = {}
 
-        for F in (MenuView, CalibrationView, ConnectionView, RunView):
+        for F in (CalibrationView, ConnectionView, MenuView, RunView):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame

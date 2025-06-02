@@ -1,7 +1,7 @@
 import tkinter as tk
 import tksheet
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from calibration.calibration_session import CalibrationSession
+from util.calibration.calibration_session import CalibrationSession
 class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
