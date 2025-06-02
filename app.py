@@ -1,5 +1,6 @@
 import tkinter as tk
-import time
+import os
+import sys
 from views.menu_view import MenuView
 from views.calibration_view import CalibrationView
 from views.connection_view import ConnectionView
@@ -29,5 +30,6 @@ class App(tk.Tk):
         self.show_frame("MenuView")
 
     def show_frame(self, page_name):
+        """ Show a frame of the App """
         frame = self.frames[page_name]
         frame.tkraise()

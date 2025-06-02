@@ -4,6 +4,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from util.calibration.calibration_session import CalibrationSession
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')  # Force TkAgg backend
+
 class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)

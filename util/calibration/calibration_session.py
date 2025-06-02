@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 import numpy as np
 from scipy.optimize import curve_fit
 
@@ -16,9 +18,15 @@ class CalibrationSession:
         # This is a 2d array of cells. The inner arrays are arrays of 3 elements, representing the machine channel, the OD measurement, and the corresponding voltage
         self.data = table
 
-    @staticmethod
+    @staticmethod        
     def run_test_json_calibration():
-        with open('util/calibration/test_calibration.json', 'r') as f:
+        try:
+            base_path = sys._MEIPASS  # PyInstaller sets this at runtime
+        except AttributeError:
+            base_path = os.path.abspath(".")
+
+        path = os.path.join(base_path, 'util/calibration/test_calibration.json')
+        with open(path, 'r') as f:
             obj = json.load(f)
         matrix = obj.get("matrix")
         
