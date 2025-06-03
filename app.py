@@ -1,6 +1,4 @@
 import tkinter as tk
-import os
-import sys
 from views.menu_view import MenuView
 from views.calibration_view import CalibrationView
 from views.connection_view import ConnectionView

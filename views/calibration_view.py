@@ -11,6 +11,7 @@ class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.canvas = None
 
         label = tk.Label(self, text="Calibration")
         label.pack(side='top', anchor='n', pady=10)
@@ -33,23 +34,27 @@ class CalibrationView(tk.Frame):
         self.sheet = tksheet.Sheet(
             left_frame,
             data=[[""], [""]],
-            headers=["Channel", "Value"],
+            headers=["Channel", "OD"],
             font=("Arial", 24, 'bold'),  # Cell font
             header_font=("Arial", 24, 'bold'),  # Header font
             index_font=("Arial", 24, 'bold'),   # Index font
-            show_x_scrollbar=False
+            show_x_scrollbar=False,
+            show_row_index=False
         )
         self.sheet.set_index_width(40)
         self.sheet.set_all_column_widths(200)
         self.sheet.enable_bindings((
-            "single_select",
             "row_select",
+            "column_select",
             "edit_cell",
+            "single_select",
+            "drag_select",
+            "arrowkeys",
+            "right_click_popup_menu",
+            "rc_select",
             "shift_select",
             "ctrl_select",
-            "select_all",
-            "drag_select",
-            "arrowkeys"
+            "select_all"
         ))
         self.sheet.bind("<Control-n>", lambda event: self.sheet.insert_row(idx=self.sheet.get_total_rows()))
         self.sheet.bind("<Delete>", lambda event: self.delete_row())
@@ -97,9 +102,11 @@ class CalibrationView(tk.Frame):
         # yada yada yada ...
 
     def run_calibration_from_json(self):
+        # Run calibration
         self.calibration_session = CalibrationSession(None)
         graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
 
+        # Create the figure and axes
         fig, ax = plt.subplots(figsize=(5, 4))
         ax.scatter(graph_V, graph_OD, color='blue')
         a, b = log.a, log.b
@@ -107,13 +114,20 @@ class CalibrationView(tk.Frame):
         y_fit = a * np.log(x_fit) + b
         ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
         ax.legend()
+
         for i, label in enumerate(graph_channels):
             ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5,5), ha='left', fontsize=10)
+
         ax.set_xlabel("Voltage")
         ax.set_ylabel("Optical Density")
         ax.set_title("Calibration: Voltage vs Optical Density")
         ax.grid(True)
 
-        canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+        # Clear the old canvas if it exists
+        if self.canvas is not None:
+            self.canvas.get_tk_widget().destroy()
+
+        # Create and store new canvas
+        self.canvas = FigureCanvasTkAgg(fig, master=self)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)

@@ -31,10 +31,15 @@ class RunView(tk.Frame):
 
         self.sheet = tksheet.Sheet(
             left_frame,
-            headers=["checkbox", "channel", "serial number"],
-            column_width=120,
-            show_row_index=True
+            data=[[""], [""], [""]],
+            headers=["✓", "channel", "Serial"],
+            show_row_index=False,
+            font=("Arial", 24, 'bold'),  # Cell font
+            header_font=("Arial", 24, 'bold'),  # Header font
+            index_font=("Arial", 24, 'bold'),   # Index font
+            show_x_scrollbar=False
         )
+
         self.sheet.pack(fill="both", expand=True)
 
         # Set the first column as a checkbox column
@@ -50,7 +55,7 @@ class RunView(tk.Frame):
             "rc_select",
             "shift_select",
             "ctrl_select",
-            "select_all"
+            "select_all",
         ))
         self.sheet.set_all_column_widths(200)
         self.sheet.bind("<Control-n>", lambda event: self.insert_row())
