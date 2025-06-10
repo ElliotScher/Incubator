@@ -2,4 +2,4 @@ matplotlib==3.10.3
 tksheet==7.5.9
 pyinstaller==6.13.0
 scipy==1.15.3
-tk==8.6.14
+tk==8.6
