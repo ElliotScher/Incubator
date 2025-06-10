@@ -38,9 +38,8 @@ class ConnectionView(tk.Frame):
 
     def ping_devices(self):
         # Ping UART and Gazoscan
-        UART_CONNECTED = False
         GAZOSCAN_CONNECTED = False
-        self.update_status(UART_CONNECTED, GAZOSCAN_CONNECTED)
+        self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
     def update_status(self, uart_connected, Gazoscan_connected):
         self.uart_status.config(fg="green" if uart_connected else "gray")
