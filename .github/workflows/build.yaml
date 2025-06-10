@@ -27,7 +27,14 @@ jobs:
               && apt-get install -y gcc \
               && pip install pyinstaller \
               && pip3 install -r requirements.txt \
-              && pyinstaller main.py
+              && pyinstaller main.py \
+                  --add-data "util/calibration/test_calibration.json:util/calibration" \
+                  --onefile \
+                  --windowed \
+                  --hidden-import=tkinter \
+                  --hidden-import=matplotlib.backends.backend_tkagg \
+                  --hidden-import=PIL._tkinter_finder \
+                  --noconfirm
             "
 
       - name: Upload Raspberry Pi binary
