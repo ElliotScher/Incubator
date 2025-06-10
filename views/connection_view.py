@@ -1,4 +1,5 @@
 import tkinter as tk
+from util.uart_util import UARTUtil
 class ConnectionView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -24,6 +25,16 @@ class ConnectionView(tk.Frame):
         self.Gazoscan_status.pack(pady=5)
         self.Gazoscan_status_label = tk.Label(self, text="Gazoscan")
         self.Gazoscan_status_label.pack()
+
+    def ping_UART(self):
+        # Ping UART device
+        try:
+            response = UARTUtil.send_and_receive(data='ping', delay=0.1)
+            UART_CONNECTED = 'ping' in response.lower()
+        except Exception as e:
+            print(f"UART ping failed: {e}")
+            UART_CONNECTED = False
+        return UART_CONNECTED
 
     def ping_devices(self):
         # Ping UART and Gazoscan
