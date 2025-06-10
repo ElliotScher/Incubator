@@ -4,6 +4,5 @@ pyinstaller main.py \
             --windowed \
             --hidden-import=tkinter \
             --hidden-import=matplotlib.backends.backend_tkagg \
-            --hidden-import=libpython3.12.so \
             --hidden-import=PIL._tkinter_finder \
             --noconfirm
