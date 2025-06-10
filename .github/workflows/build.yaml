@@ -24,7 +24,8 @@ jobs:
             arm32v7/python:3.9-bullseye \
             bash -c "
               apt-get update \
-              && apt-get install -y python3-pyinstaller gcc \
+              && apt-get install -y gcc
+              && pip install pyinstaller
               && pip3 install -r requirements.txt \
               && pyinstaller main.py
             "
