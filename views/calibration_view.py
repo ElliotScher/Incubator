@@ -100,6 +100,7 @@ class CalibrationView(tk.Frame):
 
     def run_calibration(self):
         # Get data from the tree
+        UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
         data = []
         for item in self.tree.get_children():
             od = self.tree.item(item, "values")[1]
