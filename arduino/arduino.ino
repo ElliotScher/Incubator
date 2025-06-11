@@ -46,7 +46,7 @@ void loop() {
       break;
   }
 
-  Serial.println(currentState);
+//  Serial.println(currentState);
 }
 
 void checkSerialInput() {
@@ -54,6 +54,7 @@ void checkSerialInput() {
     char c = Serial1.read();
 
     if (c == '\n') {
+      inputBuffer.trim();
       // Process the command once the whole line is received
       if (inputBuffer == "CMD:TESTCONNECTION") {
         currentState = TEST_CONNECTION;
@@ -80,5 +81,6 @@ void echoSerialInput() {
   while (Serial1.available()) {
     char c = Serial1.read();
     Serial1.write(c);  // Echo back each character
+    Serial.println("echoed: " + c);
   }
 }
