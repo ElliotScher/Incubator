@@ -22,7 +22,7 @@ class UARTUtil:
         with UARTUtil.open_port(port, baudrate, timeout) as ser:
             if isinstance(data, str):
                 data += '\n'  # <-- Adjust for your device
-                data = data.encode('ascii')  # <-- Use 'ascii' if utf-8 causes issues
+                data = data.encode('utf-8')  # <-- Use 'ascii' if utf-8 causes issues
             ser.reset_input_buffer()
             ser.write(data)
-            return ser.read(response_size).decode('ascii', errors='ignore')  # or 'utf-8'
+            return ser.read(response_size).decode('utf-8', errors='ignore')  # or 'utf-8'
