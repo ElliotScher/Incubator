@@ -9,7 +9,7 @@ class UARTUtil:
     @staticmethod
     def send_data(ser, data):
         if isinstance(data, str):
-            data += '\r\n'
+            data += '\n'
             data = data.encode('utf-8')
         ser.write(data)
 
@@ -21,7 +21,7 @@ class UARTUtil:
     def send_and_receive(port='/dev/ttyS0', baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
         with UARTUtil.open_port(port, baudrate, timeout) as ser:
             if isinstance(data, str):
-                data += '\r\n'  # <-- Adjust for your device
+                data += '\n'  # <-- Adjust for your device
                 data = data.encode('ascii')  # <-- Use 'ascii' if utf-8 causes issues
             ser.write(data)
             ser.flush()
