@@ -9,7 +9,7 @@ class UARTUtil:
     @staticmethod
     def send_data(ser, data):
         if isinstance(data, str):
-            data += '\n'
+            data += '\r\n'
             data = data.encode('ascii')
         ser.write(data)
 
