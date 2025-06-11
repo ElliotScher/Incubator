@@ -46,7 +46,7 @@ void loop() {
       break;
   }
 
-//  Serial.println(currentState);
+  Serial.println(currentState);
 }
 
 void checkSerialInput() {

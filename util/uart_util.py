@@ -10,7 +10,7 @@ class UARTUtil:
     def send_data(port='/dev/ttyS0', baudrate=9600, data='', timeout=1):
         with UARTUtil.open_port(port, baudrate, timeout) as ser:
             if isinstance(data, str):
-                data += '\n'
+                data += '\n\n'
                 data = data.encode('utf-8')
             ser.write(data)
 
