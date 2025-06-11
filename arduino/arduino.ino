@@ -46,7 +46,7 @@ void loop() {
       break;
   }
 
-//  Serial.println(currentState);
+  Serial.println(currentState);
 }
 
 void checkSerialInput() {
@@ -54,8 +54,7 @@ void checkSerialInput() {
     char c = Serial1.read();
 
     if (c == '\n') {
-      inputBuffer.trim(); // <-- removes leading/trailing whitespace including \r
-    
+      // Process the command once the whole line is received
       if (inputBuffer == "CMD:TESTCONNECTION") {
         currentState = TEST_CONNECTION;
       } else if (inputBuffer == "CMD:CALIBRATE") {
@@ -67,11 +66,10 @@ void checkSerialInput() {
       } else {
         Serial1.println("ERR:UNKNOWN_COMMAND");
       }
-    
-      inputBuffer = "";
+
+      inputBuffer = ""; // Clear buffer for next command
     } else {
       inputBuffer += c;
-      Serial.println(inputBuffer);
     }
   }
 }
