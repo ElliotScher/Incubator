@@ -1,0 +1,63 @@
+digraph {
+    boot [color = red]
+    start [color = yellow]
+    idle [color = green]
+
+    test_connection [color = orange]
+    recieve_data [color = orange]
+    transmit_data [color = orange]
+
+    calibrate [color = blue]
+    receive_channels [color = blue]
+    home_wheel_calibration [color = blue]
+    move_to_position_calibration [color = blue] // one full rotation backwards, then forwards to position
+    read_analog_input_calibration [color = blue] // mean over 3 second
+    transmit_calibration_data [color = blue]
+
+    run_reaction [color = purple]
+    home_wheel_reaction [color = purple]
+    agitate_reaction [color = purple]
+    move_to_position_reaction [color = purple] // one full rotation backwards, then forwards to position
+    read_analog_input_reaction [color = purple]
+    transmit_reaction_data [color = purple]
+    wait_for_gazoscan_data [color = purple]
+    send_gazoscan_flag [color = purple]
+
+    boot -> start
+
+    start -> idle
+
+    idle -> test_connection
+    idle -> calibrate
+    idle -> run_reaction
+
+    test_connection -> idle
+    test_connection -> recieve_data
+    recieve_data -> transmit_data
+    transmit_data -> test_connection
+
+    calibrate -> idle
+    calibrate -> receive_channels
+    receive_channels -> home_wheel_calibration
+    home_wheel_calibration -> move_to_position_calibration
+    move_to_position_calibration -> read_analog_input_calibration
+    move_to_position_calibration -> move_to_position_calibration
+    read_analog_input_calibration -> transmit_calibration_data
+    transmit_calibration_data -> move_to_position_calibration
+    move_to_position_calibration -> calibrate
+
+    run_reaction -> idle
+    run_reaction -> home_wheel_reaction
+    home_wheel_reaction -> agitate_reaction
+    home_wheel_reaction -> move_to_position_reaction
+    agitate_reaction -> home_wheel_reaction
+    move_to_position_reaction -> home_wheel_reaction
+    move_to_position_reaction -> read_analog_input_reaction
+    move_to_position_reaction -> move_to_position_reaction
+    move_to_position_reaction -> run_reaction
+    read_analog_input_reaction -> transmit_reaction_data
+    transmit_reaction_data -> wait_for_gazoscan_data
+    wait_for_gazoscan_data -> send_gazoscan_flag
+    send_gazoscan_flag -> run_reaction
+    send_gazoscan_flag -> move_to_position_reaction
+}
