@@ -33,7 +33,7 @@ class ConnectionView(tk.Frame):
     def send_arduino_state_transition(self):
         # Send state transition command to Arduino
         try:
-            UARTUtil.send_data(data = "CMD:TESTCONNECTION")
+            UARTUtil.send_data(data="CMD:TESTCONNECTION")
             print("State transition command sent to Arduino.")
         except Exception as e:
             print(f"Failed to send state transition command: {e}")
@@ -41,7 +41,7 @@ class ConnectionView(tk.Frame):
     def ping_UART(self):
         # Ping UART device
         try:
-            response = UARTUtil.send_and_receive(data = 'ping', delay = 0.1)
+            response = UARTUtil.send_and_receive(data='ping', delay=0.1)
             UART_CONNECTED = 'ping' in response.lower()
         except Exception as e:
             print(f"UART ping failed: {e}")
