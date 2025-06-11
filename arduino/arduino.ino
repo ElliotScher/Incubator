@@ -46,7 +46,7 @@ void loop() {
       break;
   }
 
-  Serial.println(currentState);
+//  Serial.println(currentState);
 }
 
 void checkSerialInput() {
@@ -67,6 +67,7 @@ void checkSerialInput() {
         Serial1.println("ERR:UNKNOWN_COMMAND");
       }
 
+      Serial.println(inputBuffer);
       inputBuffer = ""; // Clear buffer for next command
     } else {
       inputBuffer += c;
