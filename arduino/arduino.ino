@@ -47,7 +47,8 @@ SuperState currentState = IDLE;
 CalibrationState calibrationState = CAL_NONE;
 ReactionState reactionState = REACT_NONE;
 
-String inputBuffer = "";
+String superStateInputBuffer = "";
+String calibrationStateInputBuffer = "";
 
 void setup() {
   Serial.begin(9600);
@@ -57,22 +58,17 @@ void setup() {
 }
 
 void loop() {
-  checkSerialInput();
-  
   switch (currentState) {
     case IDLE:
+      runIdleState();
       break;
 
     case TEST_CONNECTION:
-      Serial1.write("p");
-      Serial1.write("i");
-      Serial1.write("n");
-      Serial1.write("g");
-      Serial1.write("\n");
-      currentState = IDLE;
+      
       break;
 
     case CALIBRATE:
+      runCalibrationState();
       break;
 
     case RUN_REACTION:
@@ -80,71 +76,56 @@ void loop() {
   }
 }
 
-void checkSerialInput() {
+void checkSuperStateSerial() {
   while (Serial1.available()) {
     char c = Serial1.read();
 
     if (c == '\n') {
-      inputBuffer.trim();
-      // Process the command once the whole line is received
-      if (inputBuffer == "CMD:TESTCONNECTION") {
+      superStateInputBuffer.trim();
+
+      if (superStateInputBuffer == "CMD:TESTCONNECTION") {
         currentState = TEST_CONNECTION;
-      } else if (inputBuffer == "CMD:CALIBRATE") {
+      } else if (superStateInputBuffer == "CMD:CALIBRATE") {
         currentState = CALIBRATE;
-      } else if (inputBuffer == "CMD:RUNREACTION") {
+      } else if (superStateInputBuffer == "CMD:RUNREACTION") {
         currentState = RUN_REACTION;
-      } else if (inputBuffer == "CMD:IDLE") {
+      } else if (superStateInputBuffer == "CMD:IDLE") {
         currentState = IDLE;
       } else {
         Serial1.println("ERR:UNKNOWN_COMMAND");
       }
 
-      Serial.println(inputBuffer);
-
-      inputBuffer = ""; // Clear buffer for next command
+      superStateInputBuffer = ""; // Clear buffer for next command
     } else {
-      inputBuffer += c;
+      superStateInputBuffer += c;
     }
   }
 }
 
+void runIdleState() {
+  checkSuperStateSerial();
+}
+
 void runCalibrationState() {
+  checkCalibrationStateSerial();
+  
   switch (calibrationState) {
     case CAL_NONE:
       calibrationState = CAL_RECEIVE_CHANNELS;
       break;
       
     case CAL_RECEIVE_CHANNELS:
-      if (Serial1.available()) {
-        String input = Serial1.readStringUntil('\n');
-        input.trim();
-    
-        if (input.startsWith("CHANNELS:")) {
-          channels = input.substring(9).toInt();
-          Serial1.println("ACK:CHANNELS_RECEIVED");
-          calibrationState = CAL_HOME_WHEEL;
-          waitingForChannels = true;
-        } else {
-          Serial1.println("ERR:INVALID_CHANNEL_DATA");
-        }
+      if (channels != 0) {
+        calibrationState = CAL_HOME_WHEEL;
       }
-      break;
-
-      calibrationState = CAL_HOME_WHEEL;
       break;
 
     case CAL_HOME_WHEEL:
-      if (homed) {
-        calibrationState = CAL_MOVE_TO_POSITION;
-      } else {
-        if (!homer.isHomed()) {
-          homer.update();
-        } else {
-          homer.reset();
-        }
-      }
+      homer.update();
+  
       if (homer.isHomed()) {
         homed = true;
+        calibrationState = CAL_MOVE_TO_POSITION;
       }
       break;
 
@@ -167,5 +148,37 @@ void runCalibrationState() {
 
     default:
       break;
+  }
+}
+
+void runTestConnectionState() {
+  Serial1.write("p");
+  Serial1.write("i");
+  Serial1.write("n");
+  Serial1.write("g");
+  Serial1.write("\n");
+  currentState = IDLE;
+}
+
+void checkCalibrationStateSerial() {
+  while (Serial1.available()) {
+    char c = Serial1.read();
+
+    if (c == '\n') {
+      calibrationStateInputBuffer.trim();  // Trim any extra whitespace
+
+      Serial.println(calibrationStateInputBuffer);
+
+      if (calibrationStateInputBuffer.startsWith("CHANNELS:")) {
+        String numberStr = calibrationStateInputBuffer.substring(9);  // After "CHANNELS:"
+        channels = numberStr.toInt();  // Convert to integer
+        Serial.print("Parsed channels: ");
+        Serial.println(channels);
+      }
+
+      calibrationStateInputBuffer = "";  // Clear buffer for next message
+    } else {
+      calibrationStateInputBuffer += c;
+    }
   }
 }
