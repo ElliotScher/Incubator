@@ -48,7 +48,6 @@ class CalibrationView(tk.Frame):
         self.sheet.enable_bindings((
             "edit_cell",
             "arrowkeys",
-            "select_rows",
         ))
         self.sheet.extra_bindings([
             ("end_edit_cell", self.validate_cell)
@@ -66,14 +65,6 @@ class CalibrationView(tk.Frame):
         # Create a frame to hold the graph on the right half
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
-
-    def delete_row(self):
-        selected_rows = self.sheet.get_selected_rows()
-        if selected_rows:
-            # Delete rows in reverse order to avoid index shifting
-            for row in sorted(selected_rows, reverse=True):
-                self.sheet.delete_row(row)
-        self.sheet.select_row(self.sheet.total_rows() - 1)
         
     def validate_cell(self, event):
         row, col = event.row, event.column
