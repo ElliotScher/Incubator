@@ -12,7 +12,11 @@ class ConnectionView(tk.Frame):
                            command=lambda: controller.show_frame("MenuView"))
         homeButton.pack()
 
-        pingButton = tk.Button(self, text="Ping", command=lambda: {self.ping_devices()})
+        pingButton = tk.Button(
+            self, 
+            text="Ping", 
+            command=lambda: [self.send_arduino_state_transition(), self.ping_devices()]
+        )
         pingButton.pack()
 
             # Create checkmark labels for UART and Gazoscan connectivity
