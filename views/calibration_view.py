@@ -3,121 +3,111 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
-
 from util.calibration.calibration_session import CalibrationSession
 from util.uart_util import UARTUtil
+import matplotlib
+matplotlib.use('TkAgg')
 
-matplotlib.use('TkAgg')  # Force TkAgg backend
 
 class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
         self.canvas = None
-        self.editing_entry = None
-
         self.ser = UARTUtil.open_port()
 
-        label = tk.Label(self, text="Calibration")
+        label = tk.Label(self, text="Calibration", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
 
-        button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"))
+        button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"),
+                           font=("Arial", 12), width=10, height=2)
         button.pack(side='top', anchor='e')
 
         info_text = (
             "Enter calibration values (0-100) in the table below.\n"
-            "Double-click a cell to edit. Use buttons to add/remove rows."
+            "Double-click a cell to edit. Select a row and press Delete to remove it."
         )
-        info_label = tk.Label(self, text=info_text, justify="left", fg="black")
+        info_label = tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12))
         info_label.pack(pady=(0, 10))
 
-        label.config(font=("Arial", 18))
-        info_label.config(font=("Arial", 12))
-        button.config(font=("Arial", 12), width=10, height=2)
-
-        # Left frame with Treeview
+        # Treeview for calibration data
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill='both', expand=True)
 
-        self.tree = ttk.Treeview(left_frame, columns=("OD",), show="headings")
+        self.tree = ttk.Treeview(left_frame, columns=("Index", "OD"), show="headings")
+        self.tree.heading("Index", text="Index")
         self.tree.heading("OD", text="OD")
+        self.tree.column("Index", width=50, anchor="center")
+        self.tree.column("OD", width=100, anchor="center")
         self.tree.pack(fill="both", expand=True)
 
-        for _ in range(50):
-            self.tree.insert('', 'end', values=(""))
+        # Insert 50 rows with index
+        for i in range(50):
+            self.tree.insert("", "end", values=(i + 1, ""))
 
         self.tree.bind("<Double-1>", self.on_double_click)
+        self.tree.bind("<Delete>", self.delete_selected_row)
 
-        # Buttons for row manipulation
-        controls = tk.Frame(left_frame)
-        controls.pack(fill='x', pady=5)
-
-        add_btn = tk.Button(controls, text="Add Row", command=self.add_row)
-        add_btn.pack(side='left', padx=5)
-
-        del_btn = tk.Button(controls, text="Delete Row", command=self.delete_row)
-        del_btn.pack(side='left', padx=5)
-
-        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration)
+        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
+                               font=("Arial", 12), width=16, height=2)
         run_button.pack(side='top', anchor='e', pady=10)
-        run_button.config(font=("Arial", 12), width=16, height=2)
 
-        # Right frame with graph
-        self.right_frame = tk.Frame(self)
-        self.right_frame.pack(side="left", fill="both", expand=True)
+        right_frame = tk.Frame(self)
+        right_frame.pack(side="left", fill="both", expand=True)
 
-    def add_row(self):
-        self.tree.insert('', 'end', values=(""))
+    def on_double_click(self, event):
+        # Start cell editing
+        item = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        if column == "#1":
+            return  # Prevent editing the index column
+        if not item:
+            return
 
-    def delete_row(self):
+        x, y, width, height = self.tree.bbox(item, column)
+        entry = tk.Entry(self.tree)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus()
+
+        def on_focus_out(event):
+            new_val = entry.get()
+            if not self.is_valid_od(new_val):
+                messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
+                new_val = ""
+            self.tree.set(item, column=column, value=new_val)
+            entry.destroy()
+
+        entry.bind("<FocusOut>", on_focus_out)
+        entry.bind("<Return>", lambda e: on_focus_out(e))
+
+    def delete_selected_row(self, event=None):
         selected = self.tree.selection()
         for item in selected:
             self.tree.delete(item)
+        self.reindex_tree()
 
-    def on_double_click(self, event):
-        item = self.tree.identify_row(event.y)
-        column = self.tree.identify_column(event.x)
+    def reindex_tree(self):
+        for i, item in enumerate(self.tree.get_children()):
+            od_val = self.tree.item(item, "values")[1]
+            self.tree.item(item, values=(i + 1, od_val))
 
-        if item and column:
-            col = int(column[1:]) - 1
-            x, y, width, height = self.tree.bbox(item, column)
-            value = self.tree.set(item, column)
-
-            self.editing_entry = tk.Entry(self.tree)
-            self.editing_entry.insert(0, value)
-            self.editing_entry.place(x=x, y=y, width=width, height=height)
-            self.editing_entry.focus()
-
-            def save_edit(event):
-                new_value = self.editing_entry.get()
-                try:
-                    num = float(new_value)
-                    if not (0 <= num <= 100):
-                        raise ValueError
-                    self.tree.set(item, column, new_value)
-                except ValueError:
-                    messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
-                finally:
-                    self.editing_entry.destroy()
-                    self.editing_entry = None
-
-            self.editing_entry.bind("<Return>", save_edit)
-            self.editing_entry.bind("<FocusOut>", save_edit)
+    def is_valid_od(self, value):
+        try:
+            num = float(value)
+            return 0 <= num <= 100
+        except ValueError:
+            return False
 
     def run_calibration(self):
+        # Get data from the tree
         data = []
         for item in self.tree.get_children():
-            row_data = self.tree.item(item)['values']
-            data.append([str(cell) for cell in row_data])
+            od = self.tree.item(item, "values")[1]
+            data.append([od])
+
         self.calibration_session = CalibrationSession(data)
 
-        populated_count = 0
-        for row in data:
-            if all(cell.strip() != "" for cell in row):
-                populated_count += 1
-            else:
-                break
+        populated_count = sum(1 for row in data if row[0].strip() != "")
         UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
     def run_calibration_from_json(self):
@@ -143,6 +133,6 @@ class CalibrationView(tk.Frame):
         if self.canvas is not None:
             self.canvas.get_tk_widget().destroy()
 
-        self.canvas = FigureCanvasTkAgg(fig, master=self.right_frame)
+        self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
