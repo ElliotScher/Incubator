@@ -50,7 +50,6 @@ class ConnectionView(tk.Frame):
 
     def ping_devices(self):
         # Ping UART and Gazoscan
-        UARTUtil.send_data("CMD:TESTCONNECTION")
         GAZOSCAN_CONNECTED = False
         self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
