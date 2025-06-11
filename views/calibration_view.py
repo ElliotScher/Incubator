@@ -1,94 +1,107 @@
 import tkinter as tk
-import tksheet
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from util.calibration.calibration_session import CalibrationSession
+from util.uart_util import UARTUtil
 import numpy as np
 import matplotlib
-from util.uart_util import UARTUtil
-matplotlib.use('TkAgg')  # Force TkAgg backend
+
+matplotlib.use('TkAgg')  # Tkinter backend
 
 class CalibrationView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
         self.canvas = None
-
         self.ser = UARTUtil.open_port()
 
-        label = tk.Label(self, text="Calibration")
-        label.pack(side='top', anchor='n', pady=10)
+        tk.Label(self, text="Calibration", font=("Arial", 18)).pack(side='top', pady=10)
 
-        button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"))
-        button.pack(side='top', anchor='e')
-        
+        tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"),
+                  font=("Arial", 12), width=10, height=2).pack(side='top', anchor='e')
+
         info_text = (
             "Enter calibration values (0-100) in the table below.\n"
-            "Double-click a cell to edit. Press Ctrl+N to add a row.\n"
-            "Select a row and press Delete or Backspace to remove it."
+            "Double-click a cell to edit."
         )
-        info_label = tk.Label(self, text=info_text, justify="left", fg="black")
-        info_label.pack(pady=(0, 10))
+        tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12)).pack(pady=(0, 10))
 
-        # Create a frame to hold the sheet on the left half
+        # Table frame
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill='both', expand=True)
 
-        self.sheet = tksheet.Sheet(
-            left_frame,
-            data=[[""] for _ in range(50)],
-            headers=["OD"],
-        )
-        self.sheet.enable_bindings((
-            "edit_cell",
-            "arrowkeys",
-        ))
-        self.sheet.pack()
-        self.sheet.pack(fill="both", expand=True)
-        label.config(font=("Arial", 18))
-        info_label.config(font=("Arial", 12))
-        button.config(font=("Arial", 12), width=10, height=2)
+        self.tree = ttk.Treeview(left_frame, columns=("Channel", "OD"), show="headings", height=20)
+        self.tree.heading("Channel", text="Channel")
+        self.tree.heading("OD", text="OD")
+        self.tree.column("Channel", width=100, anchor="center")
+        self.tree.column("OD", width=100, anchor="center")
+        self.tree.pack(expand=True, fill="both")
 
-        run_button = tk.Button(self, text="Run Calibration", command=lambda: self.run_calibration())
-        run_button.pack(side='top', anchor='e', pady=10)
-        run_button.config(font=("Arial", 12), width=16, height=2)
+        for _ in range(50):
+            self.tree.insert("", "end", values=("", ""))
 
-        # Create a frame to hold the graph on the right half
+        self.tree.bind("<Double-1>", self.edit_cell)
+
+        # Run calibration button
+        tk.Button(self, text="Run Calibration", command=self.run_calibration,
+                  font=("Arial", 12), width=16, height=2).pack(side='top', anchor='e', pady=10)
+
+        # Graph area
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
-        
-    def validate_cell(self, event):
-        row, col = event.row, event.column
-        value = self.sheet.get_cell_data(row, col)
-        try:
-            num = float(value)
-            if not (0 <= num <= 100):
-                raise ValueError
-        except ValueError:
-            self.sheet.set_cell_data(row, col, "")
-            tk.messagebox.showerror("Invalid Input", "Please enter a decimal number between 0.0 and 100.0")
+
+    def edit_cell(self, event):
+        item = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        if not item or not column:
+            return
+
+        col_index = int(column.replace('#', '')) - 1
+        x, y, width, height = self.tree.bbox(item, column)
+        old_value = self.tree.set(item, column)
+
+        entry = tk.Entry(self.tree)
+        entry.insert(0, old_value)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus()
+
+        def validate_and_save(event=None):
+            new_value = entry.get()
+            if new_value.strip() == "":
+                self.tree.set(item, column, "")
+            else:
+                try:
+                    num = float(new_value)
+                    if not (0 <= num <= 100):
+                        raise ValueError
+                    self.tree.set(item, column, str(num))
+                except ValueError:
+                    messagebox.showerror("Invalid Input", "Please enter a decimal number between 0 and 100.")
+            entry.destroy()
+
+        entry.bind("<Return>", validate_and_save)
+        entry.bind("<FocusOut>", lambda e: entry.destroy())
 
     def run_calibration(self):
-        # Retrieve data from the sheet
-        data = self.sheet.get_sheet_data()
-        self.calibration_session = CalibrationSession(data)
-        # Count how many rows have both cells populated, starting from the top
-        populated_count = 0
-        for row in data:
+        data = []
+        for row_id in self.tree.get_children():
+            row = [self.tree.set(row_id, "Channel"), self.tree.set(row_id, "OD")]
             if all(cell.strip() != "" for cell in row):
-                populated_count += 1
+                data.append(row)
             else:
                 break
-        UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+
+        self.calibration_session = CalibrationSession(data)
+        UARTUtil.send_data(self.ser, "CHANNELS:" + str(len(data)))
 
     def run_calibration_from_json(self):
-        # Run calibration
         self.calibration_session = CalibrationSession(None)
         graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
 
-        # Create the figure and axes
         fig, ax = plt.subplots(figsize=(5, 4))
         ax.scatter(graph_V, graph_OD, color='blue')
+
         a, b = log.a, log.b
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
         y_fit = a * np.log(x_fit) + b
@@ -103,11 +116,9 @@ class CalibrationView(tk.Frame):
         ax.set_title("Calibration: Voltage vs Optical Density")
         ax.grid(True)
 
-        # Clear the old canvas if it exists
         if self.canvas is not None:
             self.canvas.get_tk_widget().destroy()
 
-        # Create and store new canvas
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
