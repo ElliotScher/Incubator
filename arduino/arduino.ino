@@ -28,17 +28,15 @@ void setup() {
 }
 
 void loop() {
+  checkSerialInput();
   switch (currentState) {
     case IDLE:
-      checkSerialInput();
-      if (inputBuffer == "CMD:TESTCONNECTION") currentState = TEST_CONNECTION;
       break;
 
     case TEST_CONNECTION:
-      if (Serial1.available()) {
-        char c = Serial1.read();
-        Serial1.write(c);
-      }
+      Serial1.write("ping");
+      currentState = IDLE;
+      break;
 
     case CALIBRATE:
       break;
@@ -51,16 +49,24 @@ void loop() {
 void checkSerialInput() {
   while (Serial1.available()) {
     char c = Serial1.read();
+
     if (c == '\n') {
-      handleCommand(inputBuffer);
-      inputBuffer = "";
+      // Process the command once the whole line is received
+      if (inputBuffer == "CMD:TESTCONNECTION") {
+        currentState = TEST_CONNECTION;
+      } else if (inputBuffer == "CMD:CALIBRATE") {
+        currentState = CALIBRATE;
+      } else if (inputBuffer == "CMD:RUNREACTION") {
+        currentState = RUN_REACTION;
+      } else if (inputBuffer == "CMD:IDLE") {
+        currentState = IDLE;
+      } else {
+        Serial1.println("ERR:UNKNOWN_COMMAND");
+      }
+
+      inputBuffer = ""; // Clear buffer for next command
     } else {
       inputBuffer += c;
     }
   }
-}
-
-void handleCommand(String cmd) {
-  cmd.trim();
-  cmd.toUpperCase();
 }
