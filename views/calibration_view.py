@@ -42,7 +42,6 @@ class CalibrationView(tk.Frame):
             header_font=("Arial", 24, 'bold'),  # Header font
             index_font=("Arial", 24, 'bold'),   # Index font
             show_x_scrollbar=False,
-            show_row_index=False,
             total_rows=50
         )
         self.sheet.set_index_width(40)
@@ -50,6 +49,7 @@ class CalibrationView(tk.Frame):
         self.sheet.enable_bindings((
             "edit_cell",
             "arrowkeys",
+            "select_rows",
         ))
         self.sheet.extra_bindings([
             ("end_edit_cell", self.validate_cell)
