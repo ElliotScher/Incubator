@@ -36,13 +36,12 @@ class CalibrationView(tk.Frame):
 
         self.sheet = tksheet.Sheet(
             left_frame,
-            data=[[""], [""]],
+            data=[["", ""] for _ in range(50)],
             headers=["Channel", "OD"],
             font=("Arial", 24, 'bold'),  # Cell font
             header_font=("Arial", 24, 'bold'),  # Header font
             index_font=("Arial", 24, 'bold'),   # Index font
             show_x_scrollbar=False,
-            total_rows=50
         )
         self.sheet.set_index_width(40)
         self.sheet.set_all_column_widths(200)
