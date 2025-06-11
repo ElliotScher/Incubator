@@ -10,21 +10,21 @@ class UARTUtil:
     def send_data(ser, data):
         if isinstance(data, str):
             data += '\n'
-            data = data.encode('ascii')
+            data = data.encode('utf-8')
         ser.write(data)
         ser.flush()
         time.sleep(0.2)
 
     @staticmethod
     def receive_data(ser, size=64):
-        return ser.read(size).decode('ascii', errors='ignore')
+        return ser.read(size).decode('utf-8', errors='ignore')
 
     @staticmethod
     def send_and_receive(ser, baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
             if isinstance(data, str):
-                data += '\n'  # <-- Adjust for your device
-                data = data.encode('ascii')  # <-- Use 'ascii' if ascii causes issues
+                data += '\n'
+                data = data.encode('utf-8')
             ser.write(data)
             ser.flush()
             time.sleep(0.2)
-            return ser.read(response_size).decode('ascii', errors='ignore')  # or 'utf-8'
+            return ser.read(response_size).decode('utf-8', errors='ignore')
