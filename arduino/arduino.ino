@@ -81,6 +81,6 @@ void echoSerialInput() {
   while (Serial1.available()) {
     char c = Serial1.read();
     Serial1.write(c);  // Echo back each character
-    Serial.println("echoed: " + c);
+//    Serial.println("echoed: " + c);
   }
 }
