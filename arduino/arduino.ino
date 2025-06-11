@@ -34,8 +34,7 @@ void loop() {
       break;
 
     case TEST_CONNECTION:
-      Serial1.write("ping");
-      currentState = IDLE;
+      echoSerialInput();
       break;
 
     case CALIBRATE:
@@ -68,5 +67,12 @@ void checkSerialInput() {
     } else {
       inputBuffer += c;
     }
+  }
+}
+
+void echoSerialInput() {
+  while (Serial1.available()) {
+    char c = Serial1.read();
+    Serial1.write(c);  // Echo back each character
   }
 }

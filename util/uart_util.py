@@ -15,8 +15,9 @@ class UARTUtil:
 
 
     @staticmethod
-    def receive_data(ser, size=64):
-        return ser.read(size).decode('utf-8', errors='ignore')
+    def receive_data(port='/dev/ttyS0', baudrate=9600, timeout=1, size=64):
+        with UARTUtil.open_port(port, baudrate, timeout) as ser:
+            return ser.read(size).decode('utf-8', errors='ignore')
 
     @staticmethod
     def send_and_receive(port='/dev/ttyS0', baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
