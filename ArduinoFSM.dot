@@ -4,8 +4,7 @@ digraph {
     idle [color = green]
 
     test_connection [color = orange]
-    recieve_data [color = orange]
-    transmit_data [color = orange]
+    transmit_ping [color = orange]
 
     calibrate [color = blue]
     receive_channels [color = blue]
@@ -32,9 +31,9 @@ digraph {
     idle -> run_reaction
 
     test_connection -> idle
-    test_connection -> recieve_data
-    recieve_data -> transmit_data
-    transmit_data -> test_connection
+    test_connection -> transmit_ping
+    transmit_ping -> test_connection
+
 
     calibrate -> idle
     calibrate -> receive_channels

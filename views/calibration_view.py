@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from util.calibration.calibration_session import CalibrationSession
 import numpy as np
 import matplotlib
+from util.uart_util import UARTUtil
 matplotlib.use('TkAgg')  # Force TkAgg backend
 
 class CalibrationView(tk.Frame):
@@ -12,6 +13,8 @@ class CalibrationView(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.canvas = None
+
+        self.ser = UARTUtil.open_port()
 
         label = tk.Label(self, text="Calibration")
         label.pack(side='top', anchor='n', pady=10)
@@ -39,26 +42,15 @@ class CalibrationView(tk.Frame):
             header_font=("Arial", 24, 'bold'),  # Header font
             index_font=("Arial", 24, 'bold'),   # Index font
             show_x_scrollbar=False,
-            show_row_index=False
+            show_row_index=False,
+            total_rows=50
         )
         self.sheet.set_index_width(40)
         self.sheet.set_all_column_widths(200)
         self.sheet.enable_bindings((
-            "row_select",
-            "column_select",
             "edit_cell",
-            "single_select",
-            "drag_select",
             "arrowkeys",
-            "right_click_popup_menu",
-            "rc_select",
-            "shift_select",
-            "ctrl_select",
-            "select_all"
         ))
-        self.sheet.bind("<Control-n>", lambda event: self.sheet.insert_row(idx=self.sheet.get_total_rows()))
-        self.sheet.bind("<Delete>", lambda event: self.delete_row())
-        self.sheet.bind("<BackSpace>", lambda event: self.delete_row())
         self.sheet.extra_bindings([
             ("end_edit_cell", self.validate_cell)
         ])
@@ -68,7 +60,7 @@ class CalibrationView(tk.Frame):
         info_label.config(font=("Arial", 12))
         button.config(font=("Arial", 12), width=10, height=2)
 
-        run_button = tk.Button(self, text="Run Calibration", command=lambda: self.run_calibration_from_json())
+        run_button = tk.Button(self, text="Run Calibration", command=lambda: self.run_calibration())
         run_button.pack(side='top', anchor='e', pady=10)
         run_button.config(font=("Arial", 12), width=16, height=2)
 
@@ -99,7 +91,14 @@ class CalibrationView(tk.Frame):
         # Retrieve data from the sheet
         data = self.sheet.get_sheet_data()
         self.calibration_session = CalibrationSession(data)
-        # yada yada yada ...
+        # Count how many rows have both cells populated, starting from the top
+        populated_count = 0
+        for row in data:
+            if all(cell.strip() != "" for cell in row):
+                populated_count += 1
+            else:
+                break
+        UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
     def run_calibration_from_json(self):
         # Run calibration
