@@ -33,7 +33,8 @@ class ConnectionView(tk.Frame):
     def send_arduino_state_transition(self):
         # Send state transition command to Arduino
         try:
-            UARTUtil.send_data(data="CMD:TESTCONNECTION")
+            ser = UARTUtil.open_port()
+            UARTUtil.send_data(ser, data="CMD:TESTCONNECTION")
             print("State transition command sent to Arduino.")
         except Exception as e:
             print(f"Failed to send state transition command: {e}")
