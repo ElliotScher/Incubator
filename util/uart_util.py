@@ -22,6 +22,5 @@ class UARTUtil:
             if isinstance(data, str):
                 data += '\n'  # <-- Adjust for your device
                 data = data.encode('ascii')  # <-- Use 'ascii' if ascii causes issues
-            ser.reset_input_buffer()
             ser.write(data)
             return ser.read(response_size).decode('ascii', errors='ignore')  # or 'utf-8'
