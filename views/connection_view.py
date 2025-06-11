@@ -29,11 +29,12 @@ class ConnectionView(tk.Frame):
         self.Gazoscan_status.pack(pady=5)
         self.Gazoscan_status_label = tk.Label(self, text="Gazoscan")
         self.Gazoscan_status_label.pack()
+        
 
     def send_arduino_state_transition(self):
         # Send state transition command to Arduino
         try:
-            UARTUtil.send_data(data="CMD:TESTCONNECTION")
+            UARTUtil.send_data(data="CMD:TESTCONNECTION\n")
             print("State transition command sent to Arduino.")
         except Exception as e:
             print(f"Failed to send state transition command: {e}")
