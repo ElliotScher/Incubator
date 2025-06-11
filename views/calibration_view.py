@@ -43,9 +43,6 @@ class CalibrationView(tk.Frame):
             "edit_cell",
             "arrowkeys",
         ))
-        self.sheet.extra_bindings([
-            ("end_edit_cell", self.validate_cell)
-        ])
         self.sheet.pack()
         self.sheet.pack(fill="both", expand=True)
         label.config(font=("Arial", 18))
