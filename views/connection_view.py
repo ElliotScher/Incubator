@@ -15,7 +15,7 @@ class ConnectionView(tk.Frame):
         pingButton = tk.Button(
             self, 
             text="Ping", 
-            command=lambda: [self.send_arduino_state_transition(), self.ping_devices()]
+            command=lambda: [self.ping_devices()]
         )
         pingButton.pack()
 
@@ -51,6 +51,7 @@ class ConnectionView(tk.Frame):
     def ping_devices(self):
         # Ping UART and Gazoscan
         GAZOSCAN_CONNECTED = False
+        self.send_arduino_state_transition()
         self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
     def update_status(self, uart_connected, Gazoscan_connected):
