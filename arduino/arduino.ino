@@ -21,6 +21,7 @@ SuperState currentState = IDLE;
 String inputBuffer = "";
 
 void setup() {
+  Serial.begin(9600);
   Serial1.begin(9600);
   stepper.setMaxSpeed(3000);
   stepper.setAcceleration(10000);
@@ -29,6 +30,7 @@ void setup() {
 
 void loop() {
   checkSerialInput();
+  
   switch (currentState) {
     case IDLE:
       break;
@@ -43,6 +45,8 @@ void loop() {
     case RUN_REACTION:
       break;
   }
+
+//  Serial.println(currentState);
 }
 
 void checkSerialInput() {
@@ -50,7 +54,8 @@ void checkSerialInput() {
     char c = Serial1.read();
 
     if (c == '\n') {
-      // Process the command once the whole line is received
+      inputBuffer.trim(); // <-- removes leading/trailing whitespace including \r
+    
       if (inputBuffer == "CMD:TESTCONNECTION") {
         currentState = TEST_CONNECTION;
       } else if (inputBuffer == "CMD:CALIBRATE") {
@@ -62,10 +67,11 @@ void checkSerialInput() {
       } else {
         Serial1.println("ERR:UNKNOWN_COMMAND");
       }
-
-      inputBuffer = ""; // Clear buffer for next command
+    
+      inputBuffer = "";
     } else {
       inputBuffer += c;
+      Serial.println(inputBuffer);
     }
   }
 }
