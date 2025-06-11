@@ -1,6 +1,5 @@
 import tkinter as tk
 from util.uart_util import UARTUtil
-import time
 class ConnectionView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -31,7 +30,6 @@ class ConnectionView(tk.Frame):
         self.Gazoscan_status_label = tk.Label(self, text="Gazoscan")
         self.Gazoscan_status_label.pack()
 
-
     def send_arduino_state_transition(self):
         # Send state transition command to Arduino
         try:
@@ -42,17 +40,15 @@ class ConnectionView(tk.Frame):
 
     def ping_UART(self):
         # Ping UART device
-        timeout = 2  # seconds
-        UART_CONNECTED = False
-        start_time = time.time()
-        while time.time() - start_time < timeout and not UART_CONNECTED:
-            try:
-                response = UARTUtil.send_and_receive(data='ping', delay=0.1)
-                UART_CONNECTED = 'ping' in response.lower()
-            except Exception as e:
-                print(f"UART ping failed: {e}")
-                UART_CONNECTED = False
-            return UART_CONNECTED
+        try:
+            print("Waiting for ping response...")
+            response = UARTUtil.send_and_receive(data='ping', delay=0.1)
+            print(f"Received: {response}")
+            UART_CONNECTED = 'ping' in response.lower()
+        except Exception as e:
+            print(f"UART ping failed: {e}")
+            UART_CONNECTED = False
+        return UART_CONNECTED
 
     def ping_devices(self):
         # Ping UART and Gazoscan
