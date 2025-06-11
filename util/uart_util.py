@@ -12,6 +12,8 @@ class UARTUtil:
             data += '\n'
             data = data.encode('ascii')
         ser.write(data)
+        ser.flush()
+        time.sleep(0.2)
 
     @staticmethod
     def receive_data(ser, size=64):
@@ -23,4 +25,6 @@ class UARTUtil:
                 data += '\n'  # <-- Adjust for your device
                 data = data.encode('ascii')  # <-- Use 'ascii' if ascii causes issues
             ser.write(data)
+            ser.flush()
+            time.sleep(0.2)
             return ser.read(response_size).decode('ascii', errors='ignore')  # or 'utf-8'
