@@ -12,7 +12,7 @@ class ConnectionView(tk.Frame):
                            command=lambda: controller.show_frame("MenuView"))
         homeButton.pack()
 
-        pingButton = tk.Button(self, text="Ping", command=lambda: self.ping_devices())
+        pingButton = tk.Button(self, text="Ping", command=lambda: {self.ping_devices()})
         pingButton.pack()
 
             # Create checkmark labels for UART and Gazoscan connectivity
@@ -26,6 +26,14 @@ class ConnectionView(tk.Frame):
         self.Gazoscan_status_label = tk.Label(self, text="Gazoscan")
         self.Gazoscan_status_label.pack()
 
+    def send_arduino_state_transition(self):
+        # Send state transition command to Arduino
+        try:
+            UARTUtil.send_data("CMD:TESTCONNECTION")
+            print("State transition command sent to Arduino.")
+        except Exception as e:
+            print(f"Failed to send state transition command: {e}")
+
     def ping_UART(self):
         # Ping UART device
         try:
@@ -38,6 +46,7 @@ class ConnectionView(tk.Frame):
 
     def ping_devices(self):
         # Ping UART and Gazoscan
+        UARTUtil.send_data("CMD:TESTCONNECTION")
         GAZOSCAN_CONNECTED = False
         self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
