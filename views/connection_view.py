@@ -43,8 +43,12 @@ class ConnectionView(tk.Frame):
     def ping_UART(self):
         # Ping UART device
         try:
-            response = UARTUtil.send_and_receive(data='ping', delay=0.1)
-            UART_CONNECTED = 'ping' in response.lower()
+            timeout = 2  # seconds
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                response = UARTUtil.send_and_receive(data='ping', delay=0.1)
+                UART_CONNECTED = 'ping' in response.lower()
+                time.sleep(0.2)
         except Exception as e:
             print(f"UART ping failed: {e}")
             UART_CONNECTED = False
@@ -54,14 +58,6 @@ class ConnectionView(tk.Frame):
         # Ping UART and Gazoscan
         GAZOSCAN_CONNECTED = False
         self.send_arduino_state_transition()
-        self.uart_connected = False
-        timeout = 2  # seconds
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            if self.ping_UART():
-                self.uart_connected = True
-                break
-            time.sleep(0.2)
         self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
     def update_status(self, uart_connected, Gazoscan_connected):
