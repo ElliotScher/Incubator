@@ -5,6 +5,8 @@ class ConnectionView(tk.Frame):
         super().__init__(parent)
         self.controller = controller
 
+        self.ser = UARTUtil.open_port()
+
         label = tk.Label(self, text="Connection")
         label.pack(pady=10)
 
@@ -33,8 +35,7 @@ class ConnectionView(tk.Frame):
     def send_arduino_state_transition(self):
         # Send state transition command to Arduino
         try:
-            ser = UARTUtil.open_port()
-            UARTUtil.send_data(ser, data="CMD:TESTCONNECTION")
+            UARTUtil.send_data(self.ser, data="CMD:TESTCONNECTION")
             print("State transition command sent to Arduino.")
         except Exception as e:
             print(f"Failed to send state transition command: {e}")
@@ -43,7 +44,7 @@ class ConnectionView(tk.Frame):
         # Ping UART device
         try:
             print("Waiting for ping response...")
-            response = UARTUtil.send_and_receive(data='ping', delay=0.1)
+            response = UARTUtil.send_and_receive(ser=self.ser, data='ping', delay=0.1)
             print(f"Received: {response}")
             UART_CONNECTED = 'ping' in response.lower()
         except Exception as e:

@@ -18,8 +18,7 @@ class UARTUtil:
         return ser.read(size).decode('utf-8', errors='ignore')
 
     @staticmethod
-    def send_and_receive(port='/dev/ttyS0', baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
-        with UARTUtil.open_port(port, baudrate, timeout) as ser:
+    def send_and_receive(ser, baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
             if isinstance(data, str):
                 data += '\n'  # <-- Adjust for your device
                 data = data.encode('utf-8')  # <-- Use 'ascii' if utf-8 causes issues
