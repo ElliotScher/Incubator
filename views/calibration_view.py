@@ -36,8 +36,8 @@ class CalibrationView(tk.Frame):
 
         self.sheet = tksheet.Sheet(
             left_frame,
-            data=[["", ""] for _ in range(50)],
-            headers=["Channel", "OD"],
+            data=[[""] for _ in range(50)],
+            headers=["OD"],
             font=("Arial", 24, 'bold'),  # Cell font
             header_font=("Arial", 24, 'bold'),  # Header font
             index_font=("Arial", 24, 'bold'),   # Index font
