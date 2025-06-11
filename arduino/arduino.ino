@@ -68,6 +68,7 @@ void checkSerialInput() {
       }
 
       Serial.println(inputBuffer);
+
       inputBuffer = ""; // Clear buffer for next command
     } else {
       inputBuffer += c;
