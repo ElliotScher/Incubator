@@ -9,6 +9,7 @@ from util.uart_util import UARTUtil
 import matplotlib
 matplotlib.use('TkAgg')
 import re
+from collections import defaultdict
 
 
 class CalibrationView(tk.Frame):
@@ -334,23 +335,20 @@ class CalibrationView(tk.Frame):
         # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
         # You can process or save results here as needed
         result_str = "All calibration runs complete. Results:\n"
-        # Organize results by channel
-        channel_data = {}
+        # Calculate variance per channel for voltage
+
+        channel_voltages = defaultdict(list)
         for run in results:
             for channel_index, voltage, od in run:
-                if channel_index not in channel_data:
-                    channel_data[channel_index] = []
-                channel_data[channel_index].append(voltage)
-        for run_idx, run in enumerate(results):
-            result_str += f"Run {run_idx+1}:\n"
-            for channel_index, voltage, od in run:
-                result_str += f"  Channel: {channel_index}, Voltage: {voltage}, OD: {od}\n"
-        result_str += "\nVoltage Variance by Channel:\n"
-        for channel_index in sorted(channel_data.keys()):
-            voltages = channel_data[channel_index]
+                channel_voltages[channel_index].append(voltage)
+
+        variance_str = ""
+        for channel_index in sorted(channel_voltages.keys()):
+            voltages = channel_voltages[channel_index]
             if len(voltages) > 1:
                 var = statistics.variance(voltages)
             else:
                 var = 0.0
-                result_str += f"  Channel {channel_index}: Variance = {var:.6f}\n"
-        messagebox.showinfo("Calibration Results", result_str)
+            variance_str += f"Channel {channel_index}: Voltage variance = {var:.6f}\n"
+
+        messagebox.showinfo("Calibration Variance", variance_str)
