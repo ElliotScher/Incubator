@@ -134,7 +134,7 @@ class CalibrationView(tk.Frame):
         UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
         def poll_uart():
-            line = UARTUtil.read_line(self.ser)  # Your UART read line method
+            line = UARTUtil.receive_data(self.ser)  # Your UART read line method
 
             if line:
                 line = line.strip()
