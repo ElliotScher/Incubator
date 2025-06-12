@@ -152,6 +152,18 @@ class CalibrationView(tk.Frame):
                     print("Calibration finished! Numbers received:", received_numbers)
                     modal.grab_release()
                     modal.destroy()
+                    
+                    # Create a 2D array: [channel_index, OD, received_number]
+                    result_array = []
+                    tree_items = list(self.tree.get_children())
+                    for idx, number in enumerate(received_numbers):
+                        if idx < len(tree_items):
+                            channel_index = self.tree.item(tree_items[idx], "values")[0]
+                            od = self.tree.item(tree_items[idx], "values")[1]
+                            result_array.append([channel_index, od, number])
+                    print("Result array:", result_array)
+
+                    self.calibration_session = CalibrationSession()
                     return
 
             # Poll again after 100 ms
@@ -159,6 +171,34 @@ class CalibrationView(tk.Frame):
 
         poll_uart()
 
+    def calibration_sequence(self):
+        if not self.calibration_session:
+            self.run_calibration()
+
+        graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
+
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.scatter(graph_V, graph_OD, color='blue')
+        a, b = log.a, log.b
+        x_fit = np.linspace(min(graph_V), max(graph_V), 200)
+        y_fit = a * np.log(x_fit) + b
+        ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+        ax.legend()
+
+        for i, label in enumerate(graph_channels):
+            ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
+
+        ax.set_xlabel("Voltage")
+        ax.set_ylabel("Optical Density")
+        ax.set_title("Calibration: Voltage vs Optical Density")
+        ax.grid(True)
+
+        if self.canvas is not None:
+            self.canvas.get_tk_widget().destroy()
+
+        self.canvas = FigureCanvasTkAgg(fig, master=self)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
 
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
