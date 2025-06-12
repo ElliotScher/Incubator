@@ -1,3 +1,4 @@
+import statistics
 import tkinter as tk
 from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -48,10 +49,17 @@ class CalibrationView(tk.Frame):
 
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<Delete>", self.delete_selected_row)
+        self.tree.bind("<Up>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
+        self.tree.bind("<Down>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
+
 
         run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
                                font=("Arial", 12), width=16, height=2)
         run_button.pack(side='top', anchor='e', pady=10)
+
+        run_10_button = tk.Button(self, text="Run 10 Calibrations", command=self.run_10_calibrations,
+                               font=("Arial", 12), width=16, height=2)
+        run_10_button.pack(side='top', anchor='e', pady=10)
 
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
@@ -207,6 +215,9 @@ class CalibrationView(tk.Frame):
 
         poll_uart()
 
+    def run_10_calibrations(self):
+        pass
+
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
         graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
@@ -233,3 +244,26 @@ class CalibrationView(tk.Frame):
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+
+    def run_10_calibrations(self):
+        a_values, b_values, r2_values = [], [], []
+
+        def run_next(index):
+            if index >= 10:
+                a_var = statistics.variance(a_values)
+                b_var = statistics.variance(b_values)
+                r2_var = statistics.variance(r2_values)
+                messagebox.showinfo("Calibration Variance", f"Variance over 10 runs:\n"
+                                                            f"a: {a_var:.6f}\n"
+                                                            f"b: {b_var:.6f}\n"
+                                                            f"R²: {r2_var:.6f}")
+                return
+
+            self.run_calibration(callback=lambda a, b, r2: (
+                a_values.append(a),
+                b_values.append(b),
+                r2_values.append(r2),
+                self.after(1000, lambda: run_next(index + 1))
+            ))
+
+        run_next(0)

@@ -183,7 +183,7 @@ void runCalibrationState() {
       break;
 
     case CAL_READ_ANALOG:
-//      delay(10000);
+      delay(5000);
       currentOD = analogRead(ODPin);
       calibrationState = CAL_TRANSMIT_DATA;
       break;
