@@ -178,8 +178,8 @@ class CalibrationView(tk.Frame):
                     for i, label in enumerate(graph_channels):
                         ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
 
-                    ax.set_xlabel("Voltage")
-                    ax.set_ylabel("Optical Density")
+                    ax.set_xlabel("Optical Density")
+                    ax.set_ylabel("Voltage")
                     ax.set_title("Calibration: Voltage vs Optical Density")
                     ax.grid(True)
 
