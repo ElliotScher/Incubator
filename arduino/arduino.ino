@@ -191,13 +191,12 @@ void runCalibrationState() {
       break;
 
     case CAL_TRANSMIT_DATA:
-      Serial.print("OD:");
-      Serial.println(currentOD);
       Serial1.print("OD:");
       Serial1.println(currentOD);
 
       channelIterator++;
       if (channelIterator > channels) {
+        delay(5000);
         Serial1.println("CMD:CALIBRATION_FINISHED");
         currentState = IDLE;
         calibrationState = CAL_NONE;

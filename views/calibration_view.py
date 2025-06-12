@@ -152,6 +152,7 @@ class CalibrationView(tk.Frame):
                     print("Calibration finished! Numbers received:", received_numbers)
                     modal.grab_release()
                     modal.destroy()
+                    return
 
             # Poll again after 100 ms
             modal.after(100, poll_uart)
