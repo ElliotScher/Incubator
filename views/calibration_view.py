@@ -158,9 +158,9 @@ class CalibrationView(tk.Frame):
                     tree_items = list(self.tree.get_children())
                     for idx, number in enumerate(received_numbers):
                         if idx < len(tree_items):
-                            channel_index = self.tree.item(tree_items[idx], "values")[0]
-                            od = self.tree.item(tree_items[idx], "values")[1]
-                            result_array.append([channel_index, od, number])
+                            channel_index = int(self.tree.item(tree_items[idx], "values")[0])
+                            od = float(self.tree.item(tree_items[idx], "values")[1])
+                            result_array.append([channel_index, od, float(number)])
                     print("Result array:", result_array)
 
                     self.calibration_session = CalibrationSession(result_array)
