@@ -147,7 +147,7 @@ class CalibrationView(tk.Frame):
                         pass  # Ignore malformed numbers
 
                 # Check for calibration finished message
-                elif "CMD:CALIBRATION_FINISHED" in line:
+                if "CMD:CALIBRATION_FINISHED" in line:
                     print("Calibration finished! Numbers received:", received_numbers)
                     modal.grab_release()
                     modal.destroy()
