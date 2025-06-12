@@ -135,11 +135,9 @@ class CalibrationView(tk.Frame):
 
         def poll_uart():
             line = UARTUtil.receive_data(self.ser)  # Your UART read line method
-            # print("Received line:", line)  # Debugging output
             if line:
                 line = line.strip()
                 # Check for "OD:" prefix and extract the number
-                print("Processing line:", line)  # Debugging output
                 if line.startswith("OD:"):
                     try:
                         number_str = line[3:]  # Everything after "OD:"
