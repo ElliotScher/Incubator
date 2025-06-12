@@ -130,7 +130,7 @@ class CalibrationView(tk.Frame):
     def is_valid_od(self, value):
         try:
             num = float(value)
-            return 0 <= num <= 100
+            return 0 <= num <= 100 or num is None
         except ValueError:
             return False
 
