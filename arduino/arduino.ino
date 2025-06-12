@@ -63,6 +63,7 @@ void setup() {
 }
 
 void loop() {
+  Serial.println(currentState);
   switch (currentState) {
     case IDLE:
       runIdleState();
