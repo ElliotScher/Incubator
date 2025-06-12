@@ -150,6 +150,7 @@ class CalibrationView(tk.Frame):
                 elif "CMD:CALIBRATION_FINISHED" in line:
                     modal.grab_release()
                     modal.destroy()
+                    modal.update()
                     print("Calibration finished! Numbers received:", received_numbers)
                     return  # Stop polling
 
