@@ -176,9 +176,7 @@ void runCalibrationState() {
     case CAL_MOVE_TO_POSITION:
       delay(1000);
       channelStepper.moveToChannel(channelIterator);
-      delay(1000);
       channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
-      delay(1000);
       channelStepper.moveToChannel(channelIterator, CLOCKWISE);
       delay(1000);
       calibrationState = CAL_READ_ANALOG;

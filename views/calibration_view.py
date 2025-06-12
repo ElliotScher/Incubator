@@ -160,7 +160,7 @@ class CalibrationView(tk.Frame):
                         if idx < len(tree_items):
                             channel_index = int(self.tree.item(tree_items[idx], "values")[0])
                             od = float(self.tree.item(tree_items[idx], "values")[1])
-                            result_array.append([channel_index, od, float(number)])
+                            result_array.append([channel_index, float(number), od])
                     print("Result array:", result_array)
 
                     self.calibration_session = CalibrationSession(result_array)
@@ -178,8 +178,8 @@ class CalibrationView(tk.Frame):
                     for i, label in enumerate(graph_channels):
                         ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
 
-                    ax.set_xlabel("Optical Density")
-                    ax.set_ylabel("Voltage")
+                    ax.set_xlabel("Voltage")
+                    ax.set_ylabel("Optical Density")
                     ax.set_title("Calibration: Voltage vs Optical Density")
                     ax.grid(True)
 
