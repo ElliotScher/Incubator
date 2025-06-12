@@ -89,8 +89,11 @@ class CalibrationView(tk.Frame):
         item = self.tree.identify_row(event.y)
         column = self.tree.identify_column(event.x)
         if column == "#1" or not item:
-            return  # Prevent editing index or empty clicks
+            return  # Don't allow editing of Index column
 
+        self.edit_cell(item, column)
+
+    def edit_cell(self, item, column):
         x, y, width, height = self.tree.bbox(item, column)
         entry = tk.Entry(self.tree)
         entry.place(x=x, y=y, width=width, height=height)
@@ -104,17 +107,21 @@ class CalibrationView(tk.Frame):
             self.tree.set(item, column=column, value=new_val)
             entry.destroy()
 
-            # Get all item IDs and find the index of the current one
+            # Move to next row and begin editing
             items = self.tree.get_children()
             current_index = items.index(item)
             if current_index + 1 < len(items):
                 next_item = items[current_index + 1]
                 self.tree.selection_set(next_item)
                 self.tree.focus(next_item)
-                self.tree.see(next_item)  # Scroll to it if needed
+                self.tree.see(next_item)
+
+                # Begin editing next row's OD cell
+                self.after(10, lambda: self.edit_cell(next_item, "#2"))
 
         entry.bind("<FocusOut>", on_focus_out)
         entry.bind("<Return>", lambda e: on_focus_out(e))
+
 
     def is_valid_od(self, value):
         try:
