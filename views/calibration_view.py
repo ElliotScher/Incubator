@@ -49,8 +49,6 @@ class CalibrationView(tk.Frame):
 
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<Delete>", self.delete_selected_row)
-        self.tree.bind("<Up>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
-        self.tree.bind("<Down>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
         self.tree.bind("<Return>", self.on_return_key)
 
 
@@ -268,24 +266,91 @@ class CalibrationView(tk.Frame):
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
 
     def run_10_calibrations(self):
-        a_values, b_values, r2_values = [], [], []
+        results = []
+        for _ in range(10):
+            modal = tk.Toplevel(self)
+            modal.title("Calibration Running")
+            modal.geometry("300x150")
+            modal.resizable(False, False)
 
-        def run_next(index):
-            if index >= 10:
-                a_var = statistics.variance(a_values)
-                b_var = statistics.variance(b_values)
-                r2_var = statistics.variance(r2_values)
-                messagebox.showinfo("Calibration Variance", f"Variance over 10 runs:\n"
-                                                            f"a: {a_var:.6f}\n"
-                                                            f"b: {b_var:.6f}\n"
-                                                            f"R²: {r2_var:.6f}")
-                return
+            label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
+            label.pack(pady=20)
 
-            self.run_calibration(callback=lambda a, b, r2: (
-                a_values.append(a),
-                b_values.append(b),
-                r2_values.append(r2),
-                self.after(1000, lambda: run_next(index + 1))
-            ))
+            received_numbers = []
 
-        run_next(0)
+            def on_cancel():
+                UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
+                modal.grab_release()
+                modal.destroy()
+
+            cancel_btn = tk.Button(modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10)
+            cancel_btn.pack(pady=10)
+
+            modal.protocol("WM_DELETE_WINDOW", lambda: None)
+            modal.transient(self)
+            modal.grab_set()
+            modal.focus_set()
+
+            UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
+            data = []
+            for item in self.tree.get_children():
+                od = self.tree.item(item, "values")[1]
+                data.append([od])
+
+            self.calibration_session = CalibrationSession(data)
+            populated_count = sum(1 for row in data if row[0].strip() != "")
+            UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+
+            def poll_uart():
+                line = UARTUtil.receive_data(self.ser)
+                if line:
+                    line = line.strip()
+                    if "OD:" in line:
+                        try:
+                            number_str = line[3:]
+                            number = float(number_str)
+                            received_numbers.append(number)
+                        except ValueError:
+                            pass
+
+                    if "CMD:CALIBRATION_FINISHED" in line:
+                        modal.grab_release()
+                        modal.destroy()
+                        result_array = []
+                        tree_items = list(self.tree.get_children())
+                        for idx, number in enumerate(received_numbers):
+                            if idx < len(tree_items):
+                                channel_index = int(self.tree.item(tree_items[idx], "values")[0])
+                                od = float(self.tree.item(tree_items[idx], "values")[1])
+                                result_array.append([channel_index, float(number), od])
+                        results.append(result_array)
+                        return
+
+            modal.after(100, poll_uart)
+
+            poll_uart()
+            self.wait_window(modal)
+
+        # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
+        # You can process or save results here as needed
+        result_str = "All calibration runs complete. Results:\n"
+        # Organize results by channel
+        channel_data = {}
+        for run in results:
+            for channel_index, voltage, od in run:
+                if channel_index not in channel_data:
+                    channel_data[channel_index] = []
+                channel_data[channel_index].append(voltage)
+        for run_idx, run in enumerate(results):
+            result_str += f"Run {run_idx+1}:\n"
+            for channel_index, voltage, od in run:
+                result_str += f"  Channel: {channel_index}, Voltage: {voltage}, OD: {od}\n"
+        result_str += "\nVoltage Variance by Channel:\n"
+        for channel_index in sorted(channel_data.keys()):
+            voltages = channel_data[channel_index]
+            if len(voltages) > 1:
+                var = statistics.variance(voltages)
+            else:
+                var = 0.0
+                result_str += f"  Channel {channel_index}: Variance = {var:.6f}\n"
+        messagebox.showinfo("Calibration Results", result_str)
