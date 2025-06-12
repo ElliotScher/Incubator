@@ -55,7 +55,6 @@ class ConnectionView(tk.Frame):
         # Ping UART and Gazoscan
         GAZOSCAN_CONNECTED = False
         self.send_arduino_state_transition()
-        time.sleep(1)
         self.update_status(self.ping_UART(), GAZOSCAN_CONNECTED)
 
     def update_status(self, uart_connected, Gazoscan_connected):

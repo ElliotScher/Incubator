@@ -99,7 +99,33 @@ class CalibrationView(tk.Frame):
             return False
 
     def run_calibration(self):
-        # Get data from the tree
+        # Create modal dialog
+        modal = tk.Toplevel(self)
+        modal.title("Calibration Running")
+        modal.geometry("300x150")
+        modal.resizable(False, False)
+
+        label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
+        label.pack(pady=20)
+
+        def on_cancel():
+            # Close the modal window and release grab
+            modal.grab_release()
+            modal.destroy()
+
+        cancel_btn = tk.Button(modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10)
+        cancel_btn.pack(pady=10)
+
+        modal.protocol("WM_DELETE_WINDOW", lambda: None)
+
+        # Make the window modal: it captures all events until destroyed
+        modal.transient(self)  # Keep on top of the main window
+        modal.grab_set()
+        modal.focus_set()
+
+        # Now do your calibration work here, or in a separate thread if long-running
+        # For demo, just send data and create calibration_session
+
         UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
         data = []
         for item in self.tree.get_children():
@@ -107,7 +133,6 @@ class CalibrationView(tk.Frame):
             data.append([od])
 
         self.calibration_session = CalibrationSession(data)
-
         populated_count = sum(1 for row in data if row[0].strip() != "")
         UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 

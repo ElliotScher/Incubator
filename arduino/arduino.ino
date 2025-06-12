@@ -69,7 +69,7 @@ void loop() {
       break;
 
     case TEST_CONNECTION:
-      
+      runTestConnectionState();
       break;
 
     case CALIBRATE:
