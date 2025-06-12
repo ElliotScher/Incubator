@@ -116,6 +116,8 @@ class CalibrationView(tk.Frame):
         cancel_btn = tk.Button(modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10)
         cancel_btn.pack(pady=10)
 
+        modal.protocol("WM_DELETE_WINDOW", lambda: None)
+
         # Make the window modal: it captures all events until destroyed
         modal.transient(self)  # Keep on top of the main window
         modal.grab_set()
