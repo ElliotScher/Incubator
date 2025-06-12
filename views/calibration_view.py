@@ -98,37 +98,68 @@ class CalibrationView(tk.Frame):
         except ValueError:
             return False
 
-    def run_calibration(self):
-        modal = tk.Toplevel(self)
-        modal.title("Calibration Running")
-        modal.geometry("300x150")
-        modal.resizable(False, False)
+    import re
 
-        label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
-        label.pack(pady=20)
+def run_calibration(self):
+    modal = tk.Toplevel(self)
+    modal.title("Calibration Running")
+    modal.geometry("300x150")
+    modal.resizable(False, False)
 
-        def on_cancel():
-            UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
-            modal.grab_release()
-            modal.destroy()
+    label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
+    label.pack(pady=20)
 
-        cancel_btn = tk.Button(modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10)
-        cancel_btn.pack(pady=10)
+    received_numbers = []
 
-        modal.protocol("WM_DELETE_WINDOW", lambda: None)
-        modal.transient(self)
-        modal.grab_set()
-        modal.focus_set()
+    def on_cancel():
+        UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
+        modal.grab_release()
+        modal.destroy()
 
-        UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
-        data = []
-        for item in self.tree.get_children():
-            od = self.tree.item(item, "values")[1]
-            data.append([od])
+    cancel_btn = tk.Button(modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10)
+    cancel_btn.pack(pady=10)
 
-        self.calibration_session = CalibrationSession(data)
-        populated_count = sum(1 for row in data if row[0].strip() != "")
-        UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+    modal.protocol("WM_DELETE_WINDOW", lambda: None)
+    modal.transient(self)
+    modal.grab_set()
+    modal.focus_set()
+
+    UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
+    data = []
+    for item in self.tree.get_children():
+        od = self.tree.item(item, "values")[1]
+        data.append([od])
+
+    self.calibration_session = CalibrationSession(data)
+    populated_count = sum(1 for row in data if row[0].strip() != "")
+    UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+
+    def poll_uart():
+        line = UARTUtil.read_line(self.ser)  # Your UART read line method
+
+        if line:
+            line = line.strip()
+            # Check for "OD:" prefix and extract the number
+            if line.startswith("OD:"):
+                try:
+                    number_str = line[3:]  # Everything after "OD:"
+                    number = float(number_str)
+                    received_numbers.append(number)
+                except ValueError:
+                    pass  # Ignore malformed numbers
+
+            # Check for calibration finished message
+            elif "CMD:CALIBRATION_FINISHED" in line:
+                modal.grab_release()
+                modal.destroy()
+                print("Calibration finished! Numbers received:", received_numbers)
+                return  # Stop polling
+
+        # Poll again after 100 ms
+        modal.after(100, poll_uart)
+
+    poll_uart()
+
 
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
