@@ -49,7 +49,6 @@ class CalibrationView(tk.Frame):
             self.tree.insert("", "end", values=(i + 1, ""))
 
         self.tree.bind("<Double-1>", self.on_double_click)
-        self.tree.bind("<Delete>", self.delete_selected_row)
 
         run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
                                 font=("Arial", 12), width=16, height=2)
@@ -87,13 +86,10 @@ class CalibrationView(tk.Frame):
         entry.bind("<Return>", lambda e: on_focus_out(e))
 
     def on_double_click(self, event):
-        # Start cell editing
         item = self.tree.identify_row(event.y)
         column = self.tree.identify_column(event.x)
-        if column == "#1":
-            return  # Prevent editing the index column
-        if not item:
-            return
+        if column == "#1" or not item:
+            return  # Prevent editing index or empty clicks
 
         x, y, width, height = self.tree.bbox(item, column)
         entry = tk.Entry(self.tree)
@@ -108,19 +104,17 @@ class CalibrationView(tk.Frame):
             self.tree.set(item, column=column, value=new_val)
             entry.destroy()
 
+            # Get all item IDs and find the index of the current one
+            items = self.tree.get_children()
+            current_index = items.index(item)
+            if current_index + 1 < len(items):
+                next_item = items[current_index + 1]
+                self.tree.selection_set(next_item)
+                self.tree.focus(next_item)
+                self.tree.see(next_item)  # Scroll to it if needed
+
         entry.bind("<FocusOut>", on_focus_out)
         entry.bind("<Return>", lambda e: on_focus_out(e))
-
-    def delete_selected_row(self, event=None):
-        selected = self.tree.selection()
-        for item in selected:
-            self.tree.delete(item)
-        self.reindex_tree()
-
-    def reindex_tree(self):
-        for i, item in enumerate(self.tree.get_children()):
-            od_val = self.tree.item(item, "values")[1]
-            self.tree.item(item, values=(i + 1, od_val))
 
     def is_valid_od(self, value):
         try:
