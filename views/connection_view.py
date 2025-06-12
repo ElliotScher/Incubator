@@ -44,7 +44,7 @@ class ConnectionView(tk.Frame):
     def ping_UART(self):
         # Ping UART device
         try:
-            response = UARTUtil.receive_data(ser=self.ser, data='ping')
+            response = UARTUtil.receive_data(ser=self.ser)
             UART_CONNECTED = 'ping' in response.lower()
         except Exception as e:
             print(f"UART ping failed: {e}")
