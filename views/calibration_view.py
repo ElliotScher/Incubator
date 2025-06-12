@@ -165,7 +165,7 @@ class CalibrationView(tk.Frame):
 
                     self.calibration_session = CalibrationSession(result_array)
 
-                    graph_channels, graph_V, graph_OD, log = self.calibration_session.run_calibration()
+                    graph_channels, graph_V, graph_OD, log, r_squared = self.calibration_session.run_calibration()
 
                     fig, ax = plt.subplots(figsize=(5, 4))
                     ax.scatter(graph_V, graph_OD, color='blue')
@@ -174,6 +174,11 @@ class CalibrationView(tk.Frame):
                     y_fit = a * np.log(x_fit) + b
                     ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
                     ax.legend()
+
+                     # Annotate with equation and R²
+                    equation_text = f'y = {a:.3f} * ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
+                    plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
+                            fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.7))
 
                     for i, label in enumerate(graph_channels):
                         ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)

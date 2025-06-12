@@ -15,7 +15,8 @@ class LogFunction:
 
 class CalibrationSession:
     def __init__(self, table):
-        # This is a 2d array of cells. The inner arrays are arrays of 3 elements, representing the machine channel, the voltage measurement, and the optical density measurement.
+        # This is a 2d array of cells. The inner arrays are arrays of 3 elements,
+        # representing the machine channel, the voltage measurement, and the optical density measurement.
         self.data = table
 
     def run_calibration(self):
@@ -30,10 +31,20 @@ class CalibrationSession:
                 x.append(row[1])
                 y.append(row[2])
 
+        x = np.array(x)
+        y = np.array(y)
+
         params, _ = curve_fit(LogFunction.log_func, x, y)
         a, b = params
-        
-        return channels, x, y, LogFunction(a, b)
+
+        # Compute R^2
+        y_pred = LogFunction.log_func(x, a, b)
+        residuals = y - y_pred
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((y - np.mean(y))**2)
+        r_squared = 1 - (ss_res / ss_tot)
+
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
 
     @staticmethod        
     def run_test_json_calibration():
@@ -46,9 +57,7 @@ class CalibrationSession:
         with open(path, 'r') as f:
             obj = json.load(f)
         matrix = obj.get("matrix")
-        
 
-        # Flatten the matrix into x and y arrays
         channels = []
         x = []
         y = []
@@ -59,7 +68,17 @@ class CalibrationSession:
                 x.append(row[1])
                 y.append(row[2])
 
+        x = np.array(x)
+        y = np.array(y)
+
         params, _ = curve_fit(LogFunction.log_func, x, y)
         a, b = params
-        
-        return channels, x, y, LogFunction(a, b)
+
+        # Compute R^2
+        y_pred = LogFunction.log_func(x, a, b)
+        residuals = y - y_pred
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((y - np.mean(y))**2)
+        r_squared = 1 - (ss_res / ss_tot)
+
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
