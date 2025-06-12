@@ -332,7 +332,6 @@ class CalibrationView(tk.Frame):
 
         # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
         # You can process or save results here as needed
-        result_str = "All calibration runs complete. Results:\n"
         # Calculate variance per channel for voltage
 
         channel_voltages = defaultdict(list)
@@ -344,9 +343,9 @@ class CalibrationView(tk.Frame):
         for channel_index in sorted(channel_voltages.keys()):
             voltages = channel_voltages[channel_index]
             if len(voltages) > 1:
-                var = statistics.variance(voltages)
+                stdev = statistics.stdev(voltages)
             else:
-                var = 0.0
-            variance_str += f"Channel {channel_index}: Voltage variance = {var:.6f}\n"
+                stdev = 0.0
+            variance_str += f"Channel {channel_index}: Voltage StDev = {stdev:.3f}\n"
 
-        messagebox.showinfo("Calibration Variance", variance_str)
+        messagebox.showinfo("Calibration Statistics", variance_str)
