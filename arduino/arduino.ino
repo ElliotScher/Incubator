@@ -199,6 +199,7 @@ void runCalibrationState() {
       if (channelIterator > channels) {
         currentState = IDLE;
         calibrationState = CAL_NONE;
+        Serial1.println("CMD:CALIBRATION_FINISHED");
       } else {
         calibrationState = CAL_MOVE_TO_POSITION;
       }
