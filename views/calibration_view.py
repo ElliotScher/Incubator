@@ -139,6 +139,7 @@ class CalibrationView(tk.Frame):
                 line = line.strip()
                 # Check for "OD:" prefix and extract the number
                 if "OD:" in line:
+                    print("Received line:", line)
                     try:
                         number_str = line[3:]  # Everything after "OD:"
                         number = float(number_str)

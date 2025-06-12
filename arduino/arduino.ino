@@ -63,7 +63,6 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(currentState);
   switch (currentState) {
     case IDLE:
       runIdleState();
@@ -192,6 +191,8 @@ void runCalibrationState() {
       break;
 
     case CAL_TRANSMIT_DATA:
+      Serial.print("OD:");
+      Serial.println(currentOD);
       Serial1.print("OD:");
       Serial1.println(currentOD);
 
