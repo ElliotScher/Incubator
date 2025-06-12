@@ -53,6 +53,18 @@ class CalibrationView(tk.Frame):
         self.tree.bind("<Down>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
         self.tree.bind("<Return>", self.on_return_key)
 
+
+        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
+                                font=("Arial", 12), width=16, height=2)
+        run_button.pack(side='top', anchor='e', pady=10)
+
+        run_10_button = tk.Button(self, text="Run 10 Calibrations", command=self.run_10_calibrations,
+                                font=("Arial", 12), width=16, height=2)
+        run_10_button.pack(side='top', anchor='e', pady=10)
+
+        right_frame = tk.Frame(self)
+        right_frame.pack(side="left", fill="both", expand=True)
+
     def on_return_key(self, event):
         # Select the cell and start editing if OD column
         item = self.tree.focus()
@@ -76,18 +88,6 @@ class CalibrationView(tk.Frame):
 
         entry.bind("<FocusOut>", on_focus_out)
         entry.bind("<Return>", lambda e: on_focus_out(e))
-
-
-    run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
-                               font=("Arial", 12), width=16, height=2)
-    run_button.pack(side='top', anchor='e', pady=10)
-
-    run_10_button = tk.Button(self, text="Run 10 Calibrations", command=self.run_10_calibrations,
-                               font=("Arial", 12), width=16, height=2)
-    run_10_button.pack(side='top', anchor='e', pady=10)
-
-    right_frame = tk.Frame(self)
-    right_frame.pack(side="left", fill="both", expand=True)
 
     def on_double_click(self, event):
         # Start cell editing
