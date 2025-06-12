@@ -53,29 +53,29 @@ class CalibrationView(tk.Frame):
         self.tree.bind("<Down>", lambda event: self.tree.event_generate("<<TreeviewSelect>>"))
         self.tree.bind("<Return>", self.on_return_key)
 
-        def on_return_key(self, event):
-            # Select the cell and start editing if OD column
-            item = self.tree.focus()
-            if not item:
-                return
-            col = self.tree.identify_column(event.x) if hasattr(event, 'x') else "#2"
-            if col == "#1":
-                return
-            x, y, width, height = self.tree.bbox(item, col)
-            entry = tk.Entry(self.tree)
-            entry.place(x=x, y=y, width=width, height=height)
-            entry.focus()
+    def on_return_key(self, event):
+        # Select the cell and start editing if OD column
+        item = self.tree.focus()
+        if not item:
+            return
+        col = self.tree.identify_column(event.x) if hasattr(event, 'x') else "#2"
+        if col == "#1":
+            return
+        x, y, width, height = self.tree.bbox(item, col)
+        entry = tk.Entry(self.tree)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus()
 
-            def on_focus_out(event):
-                new_val = entry.get()
-                if not self.is_valid_od(new_val):
-                    messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
-                    new_val = ""
-                self.tree.set(item, column=col, value=new_val)
-                entry.destroy()
+        def on_focus_out(event):
+            new_val = entry.get()
+            if not self.is_valid_od(new_val):
+                messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
+                new_val = ""
+            self.tree.set(item, column=col, value=new_val)
+            entry.destroy()
 
-            entry.bind("<FocusOut>", on_focus_out)
-            entry.bind("<Return>", lambda e: on_focus_out(e))
+        entry.bind("<FocusOut>", on_focus_out)
+        entry.bind("<Return>", lambda e: on_focus_out(e))
 
 
         run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
