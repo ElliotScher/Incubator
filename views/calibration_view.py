@@ -101,27 +101,31 @@ class CalibrationView(tk.Frame):
 
         def on_focus_out(event):
             new_val = entry.get()
+            move_to_next = True
+
             if not self.is_valid_od(new_val):
                 messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
                 new_val = ""
+                move_to_next = False  # Don't move if invalid
             self.tree.set(item, column=column, value=new_val)
             entry.destroy()
 
-            # Move to next row and begin editing
-            items = self.tree.get_children()
-            current_index = items.index(item)
-            if current_index + 1 < len(items):
-                next_item = items[current_index + 1]
-                self.tree.selection_set(next_item)
-                self.tree.focus(next_item)
-                self.tree.see(next_item)
+            if new_val.strip() == "":
+                move_to_next = False
+                self.tree.selection_remove(item)  # Deselect current row
 
-                # Begin editing next row's OD cell
-                self.after(10, lambda: self.edit_cell(next_item, "#2"))
+            if move_to_next:
+                items = self.tree.get_children()
+                current_index = items.index(item)
+                if current_index + 1 < len(items):
+                    next_item = items[current_index + 1]
+                    self.tree.selection_set(next_item)
+                    self.tree.focus(next_item)
+                    self.tree.see(next_item)
+                    self.after(10, lambda: self.edit_cell(next_item, "#2"))
 
         entry.bind("<FocusOut>", on_focus_out)
         entry.bind("<Return>", lambda e: on_focus_out(e))
-
 
     def is_valid_od(self, value):
         try:
@@ -130,9 +134,7 @@ class CalibrationView(tk.Frame):
         except ValueError:
             return False
 
-    def run_calibration(self):
-        self.focus_set()
-        
+    def run_calibration(self):        
         modal = tk.Toplevel(self)
         modal.title("Calibration Running")
         modal.geometry("300x150")
