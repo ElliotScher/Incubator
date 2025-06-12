@@ -18,7 +18,6 @@ class CalibrationSession:
         # This is a 2d array of cells. The inner arrays are arrays of 3 elements, representing the machine channel, the OD measurement, and the corresponding voltage
         self.data = table
 
-    @staticmethod
     def run_calibration(self):
         # Flatten the matrix into x and y arrays
         channels = []
