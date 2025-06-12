@@ -134,7 +134,7 @@ class CalibrationView(tk.Frame):
         UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
         def poll_uart():
-            line = UARTUtil.receive_data(self.ser)  # Your UART read line method
+            line = UARTUtil.receive_data(self.ser)
             if line:
                 line = line.strip()
                 # Check for "OD:" prefix and extract the number
@@ -148,9 +148,9 @@ class CalibrationView(tk.Frame):
 
                 # Check for calibration finished message
                 elif "CMD:CALIBRATION_FINISHED" in line:
+                    print("Calibration finished! Numbers received:", received_numbers)
                     modal.grab_release()
                     modal.destroy()
-                    print("Calibration finished! Numbers received:", received_numbers)
 
             # Poll again after 100 ms
             modal.after(100, poll_uart)
