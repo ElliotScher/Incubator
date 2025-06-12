@@ -240,9 +240,6 @@ class CalibrationView(tk.Frame):
 
         poll_uart()
 
-    def run_10_calibrations(self):
-        pass
-
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
         graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
