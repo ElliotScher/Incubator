@@ -1,20 +1,25 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 #include "StepperHomer.h"
+#include "ChannelStepper.h"
 
 #define dirPin 2
 #define stepPin 3
 #define homingPin 28
+#define ODPin A0
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
 StepperHomer homer(stepper, homingPin, 25, 625);
+ChannelStepper channelStepper(stepper, 50, 48, 800, 6.25);
+
 
 // Calibration Variables
 int channels = 0;
 bool waitingForChannels = false;
 bool homed = false;
-
+int channelIterator = 0;
+int currentOD = 0;
 
 enum SuperState {
   IDLE,
@@ -54,7 +59,7 @@ void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
   stepper.setMaxSpeed(3000);
-  stepper.setAcceleration(10000);
+  stepper.setAcceleration(6000);
 }
 
 void loop() {
@@ -106,51 +111,6 @@ void runIdleState() {
   checkSuperStateSerial();
 }
 
-void runCalibrationState() {
-  checkCalibrationStateSerial();
-  
-  switch (calibrationState) {
-    case CAL_NONE:
-      calibrationState = CAL_RECEIVE_CHANNELS;
-      break;
-      
-    case CAL_RECEIVE_CHANNELS:
-      if (channels != 0) {
-        calibrationState = CAL_HOME_WHEEL;
-      }
-      break;
-
-    case CAL_HOME_WHEEL:
-      homer.update();
-  
-      if (homer.isHomed()) {
-        homed = true;
-        calibrationState = CAL_MOVE_TO_POSITION;
-      }
-      break;
-
-    case CAL_MOVE_TO_POSITION:
-      // move to known calibration position
-      // once reached:
-      calibrationState = CAL_READ_ANALOG;
-      break;
-
-    case CAL_READ_ANALOG:
-      // analogRead() sensors here
-      calibrationState = CAL_TRANSMIT_DATA;
-      break;
-
-    case CAL_TRANSMIT_DATA:
-      // Serial1.println() of calibration data
-      currentState = IDLE;
-      calibrationState = CAL_NONE;
-      break;
-
-    default:
-      break;
-  }
-}
-
 void runTestConnectionState() {
   Serial1.write("p");
   Serial1.write("i");
@@ -180,5 +140,67 @@ void checkCalibrationStateSerial() {
     } else {
       calibrationStateInputBuffer += c;
     }
+  }
+}
+
+void runCalibrationState() {
+  checkCalibrationStateSerial();
+  
+  switch (calibrationState) {
+    case CAL_NONE:
+      channelIterator = 1;
+      homer.reset();
+      channelStepper.setCurrentChannel(48);
+      calibrationState = CAL_RECEIVE_CHANNELS;
+      break;
+      
+    case CAL_RECEIVE_CHANNELS:
+      if (channels != 0) {
+        calibrationState = CAL_HOME_WHEEL;
+      }
+      break;
+
+    case CAL_HOME_WHEEL:
+      homer.update();
+  
+      if (homer.isHomed()) {
+        homed = true;
+        calibrationState = CAL_MOVE_TO_POSITION;
+      }
+      break;
+
+    case CAL_MOVE_TO_POSITION:
+      delay(1000);
+      channelStepper.moveToChannel(channelIterator);
+      delay(1000);
+      channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
+      delay(1000);
+      channelStepper.moveToChannel(channelIterator, CLOCKWISE);
+      delay(1000);
+      calibrationState = CAL_READ_ANALOG;
+      break;
+
+    case CAL_READ_ANALOG:
+      delay(10000);
+      currentOD = analogRead(ODPin);
+      Serial.println(currentOD);
+      calibrationState = CAL_TRANSMIT_DATA;
+      break;
+
+    case CAL_TRANSMIT_DATA:
+      Serial1.print("OD");
+      Serial1.println(currentOD);
+
+      channelIterator++;
+      if (channelIterator > channels) {
+        currentState = IDLE;
+        calibrationState = CAL_NONE;
+      } else {
+        calibrationState = CAL_MOVE_TO_POSITION;
+      }
+      break;
+
+    default:
+      break;
   }
 }
