@@ -49,7 +49,6 @@ class CalibrationView(tk.Frame):
             self.tree.insert("", "end", values=(i + 1, ""))
 
         self.tree.bind("<Double-1>", self.on_double_click)
-        self.tree.bind("<Return>", self.edit_next_cell)
 
         run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
                                 font=("Arial", 12), width=16, height=2)
@@ -135,11 +134,6 @@ class CalibrationView(tk.Frame):
         except ValueError:
             pass  # current_editing_item not in items
 
-
-    def reindex_tree(self):
-        for i, item in enumerate(self.tree.get_children()):
-            od_val = self.tree.item(item, "values")[1]
-            self.tree.item(item, values=(i + 1, od_val))
 
     def is_valid_od(self, value):
         try:
