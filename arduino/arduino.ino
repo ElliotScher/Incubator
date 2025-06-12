@@ -129,7 +129,11 @@ void checkCalibrationStateSerial() {
 
       Serial.println(calibrationStateInputBuffer);
 
-      if (calibrationStateInputBuffer.startsWith("CHANNELS:")) {
+      if (calibrationStateInputBuffer == "CMD:CANCEL_CALIBRATION") {
+        stepper.stop();
+        calibrationState = CAL_NONE;
+        currentState = IDLE;
+      } else if (calibrationStateInputBuffer.startsWith("CHANNELS:")) {
         String numberStr = calibrationStateInputBuffer.substring(9);  // After "CHANNELS:"
         channels = numberStr.toInt();  // Convert to integer
         Serial.print("Parsed channels: ");

@@ -99,7 +99,6 @@ class CalibrationView(tk.Frame):
             return False
 
     def run_calibration(self):
-        # Create modal dialog
         modal = tk.Toplevel(self)
         modal.title("Calibration Running")
         modal.geometry("300x150")
@@ -109,7 +108,7 @@ class CalibrationView(tk.Frame):
         label.pack(pady=20)
 
         def on_cancel():
-            # Close the modal window and release grab
+            UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
             modal.grab_release()
             modal.destroy()
 
@@ -117,14 +116,9 @@ class CalibrationView(tk.Frame):
         cancel_btn.pack(pady=10)
 
         modal.protocol("WM_DELETE_WINDOW", lambda: None)
-
-        # Make the window modal: it captures all events until destroyed
-        modal.transient(self)  # Keep on top of the main window
+        modal.transient(self)
         modal.grab_set()
         modal.focus_set()
-
-        # Now do your calibration work here, or in a separate thread if long-running
-        # For demo, just send data and create calibration_session
 
         UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
         data = []
