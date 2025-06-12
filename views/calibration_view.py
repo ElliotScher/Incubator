@@ -128,7 +128,7 @@ class CalibrationView(tk.Frame):
         entry.bind("<Return>", lambda e: on_focus_out(e))
 
     def is_valid_od(self, value):
-        if (value is None): return True
+        if (value == ""): return True
         try:
             num = float(value)
             return 0 <= num <= 100
