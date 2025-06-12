@@ -176,9 +176,15 @@ class CalibrationView(tk.Frame):
                     ax.legend()
 
                      # Annotate with equation and R²
-                    equation_text = f'y = {a:.3f} * ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
+                    equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
                     plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
                             fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.7))
+                    
+                    for i, label in enumerate(graph_channels):
+                        voltage = graph_V[i]
+                        od = graph_OD[i]
+                        annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
+                        ax.annotate(annotation, (voltage, od), textcoords="offset points", xytext=(10, 10), ha='left', fontsize=8, bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3))
 
                     for i, label in enumerate(graph_channels):
                         ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
