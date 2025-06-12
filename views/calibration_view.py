@@ -130,9 +130,9 @@ class CalibrationView(tk.Frame):
             od = self.tree.item(item, "values")[1]
             data.append([od])
 
-    self.calibration_session = CalibrationSession(data)
-    populated_count = sum(1 for row in data if row[0].strip() != "")
-    UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+        self.calibration_session = CalibrationSession(data)
+        populated_count = sum(1 for row in data if row[0].strip() != "")
+        UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
