@@ -131,6 +131,8 @@ class CalibrationView(tk.Frame):
             return False
 
     def run_calibration(self):
+        self.focus_set()
+        
         modal = tk.Toplevel(self)
         modal.title("Calibration Running")
         modal.geometry("300x150")
