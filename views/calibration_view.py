@@ -49,6 +49,7 @@ class CalibrationView(tk.Frame):
             self.tree.insert("", "end", values=(i + 1, ""))
 
         self.tree.bind("<Double-1>", self.on_double_click)
+        self.tree.bind("<Delete>", self.delete_selected_row)
 
         run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
                                 font=("Arial", 12), width=16, height=2)
@@ -61,34 +62,29 @@ class CalibrationView(tk.Frame):
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
 
-    def on_double_click(self, event):
-        item = self.tree.identify_row(event.y)
-        column = self.tree.identify_column(event.x)
-        if column == "#1" or not item:
+    def on_return_key(self, event):
+        # Select the cell and start editing if OD column
+        item = self.tree.focus()
+        if not item:
             return
-
-        x, y, width, height = self.tree.bbox(item, column)
+        col = self.tree.identify_column(event.x) if hasattr(event, 'x') else "#2"
+        if col == "#1":
+            return
+        x, y, width, height = self.tree.bbox(item, col)
         entry = tk.Entry(self.tree)
         entry.place(x=x, y=y, width=width, height=height)
         entry.focus()
 
-        def save_and_destroy():
+        def on_focus_out(event):
             new_val = entry.get()
             if not self.is_valid_od(new_val):
                 messagebox.showerror("Invalid Input", "Please enter a number between 0.0 and 100.0")
                 new_val = ""
-            self.tree.set(item, column=column, value=new_val)
+            self.tree.set(item, column=col, value=new_val)
             entry.destroy()
 
-        def on_return(event):
-            save_and_destroy()
-            self.edit_next_cell()
-
-        entry.bind("<FocusOut>", lambda e: save_and_destroy())
-        entry.bind("<Return>", on_return)
-
-        self.current_editing_item = item
-
+        entry.bind("<FocusOut>", on_focus_out)
+        entry.bind("<Return>", lambda e: on_focus_out(e))
 
     def on_double_click(self, event):
         # Start cell editing
@@ -115,25 +111,16 @@ class CalibrationView(tk.Frame):
         entry.bind("<FocusOut>", on_focus_out)
         entry.bind("<Return>", lambda e: on_focus_out(e))
 
-    def edit_next_cell(self, event=None):
-        items = self.tree.get_children()
-        if not hasattr(self, 'current_editing_item'):
-            return
+    def delete_selected_row(self, event=None):
+        selected = self.tree.selection()
+        for item in selected:
+            self.tree.delete(item)
+        self.reindex_tree()
 
-        try:
-            idx = items.index(self.current_editing_item)
-            next_idx = idx + 1
-            if next_idx < len(items):
-                next_item = items[next_idx]
-                # Programmatically simulate a double-click on the next OD cell
-                x, y, w, h = self.tree.bbox(next_item, "#2")
-                event = tk.Event()
-                event.x = x + w // 2
-                event.y = y + h // 2
-                self.on_double_click(event)
-        except ValueError:
-            pass  # current_editing_item not in items
-
+    def reindex_tree(self):
+        for i, item in enumerate(self.tree.get_children()):
+            od_val = self.tree.item(item, "values")[1]
+            self.tree.item(item, values=(i + 1, od_val))
 
     def is_valid_od(self, value):
         try:
