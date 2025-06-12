@@ -322,7 +322,7 @@ class CalibrationView(tk.Frame):
                             if idx < len(tree_items):
                                 channel_index = int(self.tree.item(tree_items[idx], "values")[0])
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
-                                result_array.append([channel_index, float(number), od])
+                        result_array.append([channel_index, float(number), od])
                         results.append(result_array)
                         return
 
