@@ -15,7 +15,7 @@ class LogFunction:
 
 class CalibrationSession:
     def __init__(self, table):
-        # This is a 2d array of cells. The inner arrays are arrays of 3 elements, representing the machine channel, the OD measurement, and the corresponding voltage
+        # This is a 2d array of cells. The inner arrays are arrays of 3 elements, representing the machine channel, the voltage measurement, and the optical density measurement.
         self.data = table
 
     def run_calibration(self):
