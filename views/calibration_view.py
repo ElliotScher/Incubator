@@ -49,7 +49,7 @@ class CalibrationView(tk.Frame):
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<Delete>", self.delete_selected_row)
 
-        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
+        run_button = tk.Button(self, text="Run Calibration", command=self.calibration_sequence,
                                font=("Arial", 12), width=16, height=2)
         run_button.pack(side='top', anchor='e', pady=10)
 
@@ -163,7 +163,7 @@ class CalibrationView(tk.Frame):
                             result_array.append([channel_index, od, number])
                     print("Result array:", result_array)
 
-                    self.calibration_session = CalibrationSession()
+                    self.calibration_session = CalibrationSession(result_array)
                     return
 
             # Poll again after 100 ms
