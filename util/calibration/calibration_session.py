@@ -4,14 +4,14 @@ import sys
 import numpy as np
 from scipy.optimize import curve_fit
 
-class ExpFunction:
+class LogFunction:
     def __init__(self, a, b):
         self.a = a
         self.b = b
 
     @staticmethod
-    def exp_func(x, a, b):
-        return 10 ** ((x - b) / a)
+    def log_func(x, a, b):
+        return a * np.log10(x) + b
 
 class CalibrationSession:
     def __init__(self, table):
@@ -24,7 +24,7 @@ class CalibrationSession:
         channels = []
         x = []
         y = []
-
+        
         for row in self.data:
             if (row[1] != 0 and row[1] is not None):
                 channels.append(row[0])
@@ -34,20 +34,19 @@ class CalibrationSession:
         x = np.array(x)
         y = np.array(y)
 
-        # Fit the exponential function y = 10^((x - b)/a)
-        params, _ = curve_fit(ExpFunction.exp_func, x, y, maxfev=10000)
+        params, _ = curve_fit(LogFunction.log_func, x, y)
         a, b = params
 
         # Compute R^2
-        y_pred = ExpFunction.exp_func(x, a, b)
+        y_pred = LogFunction.log_func(x, a, b)
         residuals = y - y_pred
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((y - np.mean(y))**2)
         r_squared = 1 - (ss_res / ss_tot)
 
-        return channels, x.tolist(), y.tolist(), ExpFunction(a, b), r_squared
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
 
-    @staticmethod
+    @staticmethod        
     def run_test_json_calibration():
         try:
             base_path = sys._MEIPASS  # PyInstaller sets this at runtime
@@ -62,7 +61,7 @@ class CalibrationSession:
         channels = []
         x = []
         y = []
-
+        
         for row in matrix:
             if (row[1] != 0 and row[1] is not None):
                 channels.append(row[0])
@@ -72,14 +71,14 @@ class CalibrationSession:
         x = np.array(x)
         y = np.array(y)
 
-        params, _ = curve_fit(ExpFunction.exp_func, x, y, maxfev=10000)
+        params, _ = curve_fit(LogFunction.log_func, x, y)
         a, b = params
 
         # Compute R^2
-        y_pred = ExpFunction.exp_func(x, a, b)
+        y_pred = LogFunction.log_func(x, a, b)
         residuals = y - y_pred
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((y - np.mean(y))**2)
         r_squared = 1 - (ss_res / ss_tot)
 
-        return channels, x.tolist(), y.tolist(), ExpFunction(a, b), r_squared
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
