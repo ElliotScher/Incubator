@@ -201,33 +201,32 @@ class CalibrationView(tk.Frame):
 
                     self.calibration_session = CalibrationSession(result_array)
 
-                    graph_channels, graph_V, graph_OD, log, r_squared = self.calibration_session.run_calibration()
+                    graph_channels, graph_OD, graph_V, exp, r_squared = self.calibration_session.run_calibration()
 
                     fig, ax = plt.subplots(figsize=(5, 4))
-                    ax.scatter(graph_V, graph_OD, color='blue')
-                    a, b = log.a, log.b
-                    x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-                    y_fit = a * np.log(x_fit) + b
-                    ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+                    ax.scatter(graph_OD, graph_V, color='blue')  # X: OD, Y: Voltage
+
+                    a, b = exp.a, exp.b
+                    x_fit = np.linspace(min(graph_OD), max(graph_OD), 200)
+                    y_fit = a * np.exp(x_fit) + b
+                    ax.plot(x_fit, y_fit, color='red', label='Fit: a·e^OD + b')
                     ax.legend()
 
-                     # Annotate with equation and R²
-                    equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
+                    # Annotate with equation and R²
+                    equation_text = f'y = {a:.3f}e^x + {b:.3f}\n$R^2$ = {r_squared:.4f}'
                     plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
                             fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.7))
-                    
+
+                    # Annotate each point
                     for i, label in enumerate(graph_channels):
-                        voltage = graph_V[i]
                         od = graph_OD[i]
-                        annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
-                        ax.annotate(annotation, (voltage, od), textcoords="offset points", xytext=(10, 10), ha='left', fontsize=8, bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3))
+                        voltage = graph_V[i]
+                        annotation = f"Ch:{label}\nOD:{od:.2f}\nV:{voltage:.2f}"
+                        ax.annotate(annotation, (od, voltage), textcoords="offset points", xytext=(10, 10), ha='left', fontsize=8, bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3))
 
-                    for i, label in enumerate(graph_channels):
-                        ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
-
-                    ax.set_xlabel("Voltage")
-                    ax.set_ylabel("Optical Density")
-                    ax.set_title("Calibration: Voltage vs Optical Density")
+                    ax.set_xlabel("Optical Density")
+                    ax.set_ylabel("Voltage")
+                    ax.set_title("Calibration: Optical Density vs Voltage")
                     ax.grid(True)
 
                     if self.canvas is not None:
@@ -236,6 +235,7 @@ class CalibrationView(tk.Frame):
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
                     self.canvas.draw()
                     self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+
                     return
 
             # Poll again after 100 ms
