@@ -206,7 +206,7 @@ class CalibrationView(tk.Frame):
                     fig, ax = plt.subplots(figsize=(5, 4))
                     # Plot error bars so their center is at the fit line, not the measured OD
                     y_fit_points = a * np.log10(np.array(graph_V)) + b
-                    ax.errorbar(graph_V, y_fit_points, yerr=error_bars, fmt='o', color='blue', ecolor='gray', capsize=3)
+                    ax.errorbar(graph_V, y_fit_points, yerr=error_bars, fmt='o', color='blue', ecolor='red', capsize=3)
                     a, b = log.a, log.b
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     y_fit = a * np.log10(x_fit) + b
@@ -216,7 +216,7 @@ class CalibrationView(tk.Frame):
                     # Annotate with equation and R²
                     equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
                     plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
-                            fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.7))
+                            fontsize=10, verticalalignment='bottom', horizontalalignment='left', bbox=dict(facecolor='white', alpha=0.7))
 
                     for i, label in enumerate(graph_channels):
                         voltage = graph_V[i]
