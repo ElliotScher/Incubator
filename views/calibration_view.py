@@ -206,8 +206,8 @@ class CalibrationView(tk.Frame):
                     fig, ax = plt.subplots(figsize=(5, 4))
                     ax.scatter(graph_V, graph_OD, color='blue')
                     a, b = log.a, log.b
-                    x_fit = a * np.log(x_fit) + b
-                    y_fit = np.linspace(min(graph_V), max(graph_V), 200)
+                    x_fit = np.linspace(min(graph_OD), max(graph_OD), 200)
+                    y_fit = a * np.log(x_fit) + b
                     ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
                     ax.legend()
 
