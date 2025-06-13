@@ -214,9 +214,9 @@ class CalibrationView(tk.Frame):
 
                     # Draw custom vertical error bars centered on the fit line
                     for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-                        ax.vlines(x, y_fit - yerr, y_fit + yerr, color='gray', linewidth=1)
-                        ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color='gray')  # bottom cap
-                        ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color='gray')  # top cap
+                        ax.vlines(x, y_fit - yerr, y_fit + yerr, color='red', linewidth=1)
+                        ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color='red')  # bottom cap
+                        ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color='red')  # top cap
 
                     # Plot the fitted line
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
@@ -227,8 +227,8 @@ class CalibrationView(tk.Frame):
 
                     # Annotate with equation and R²
                     equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
-                    plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
-                            fontsize=10, verticalalignment='bottom', horizontalalignment='left', bbox=dict(facecolor='white', alpha=0.7))
+                    plt.text(0.10, 0.10, equation_text, transform=plt.gca().transAxes,
+                            fontsize=10, verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.7))
 
                     for i, label in enumerate(graph_channels):
                         voltage = graph_V[i]
