@@ -204,14 +204,21 @@ class CalibrationView(tk.Frame):
                     graph_channels, graph_V, graph_OD, log, r_squared, error_bars = self.calibration_session.run_calibration()
 
                     fig, ax = plt.subplots(figsize=(5, 4))
-                    # Plot error bars so their center is at the fit line, not the measured OD
-                    y_fit_points = a * np.log10(np.array(graph_V)) + b
-                    ax.errorbar(graph_V, y_fit_points, yerr=error_bars, fmt='o', color='blue', ecolor='red', capsize=3)
+
+                    # Calculate fitted y-values (ODs) from the log fit
                     a, b = log.a, log.b
+                    graph_OD_fit = a * np.log10(graph_V) + b
+
+                    # Plot error bars centered on the fitted line instead of raw OD data
+                    ax.errorbar(graph_V, graph_OD_fit, yerr=error_bars, fmt='o', color='blue', ecolor='gray', capsize=3)
+
+                    # Plot the fitted line
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     y_fit = a * np.log10(x_fit) + b
                     ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+
                     ax.legend()
+
 
                     # Annotate with equation and R²
                     equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
