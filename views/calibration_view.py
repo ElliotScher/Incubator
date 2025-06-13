@@ -206,8 +206,8 @@ class CalibrationView(tk.Frame):
                     fig, ax = plt.subplots(figsize=(5, 4))
                     ax.scatter(graph_V, graph_OD, color='blue')
                     a, b = log.a, log.b
-                    x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-                    y_fit = a * np.log(x_fit) + b
+                    x_fit = a * np.log(x_fit) + b
+                    y_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
                     ax.legend()
 
@@ -225,8 +225,8 @@ class CalibrationView(tk.Frame):
                     for i, label in enumerate(graph_channels):
                         ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
 
-                    ax.set_xlabel("Voltage")
-                    ax.set_ylabel("Optical Density")
+                    ax.set_xlabel("Optical Density")
+                    ax.set_ylabel("Voltage")
                     ax.set_title("Calibration: Voltage vs Optical Density")
                     ax.grid(True)
 
