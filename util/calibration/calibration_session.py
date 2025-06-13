@@ -4,14 +4,15 @@ import sys
 import numpy as np
 from scipy.optimize import curve_fit
 
-class LogFunction:
-    def __init__(self, a, b):
+class ExpFunction:
+    def __init__(self, a, b, c):
         self.a = a
         self.b = b
+        self.c = c
 
     @staticmethod
-    def log_func(x, a, b):
-        return a * np.log(x) + b
+    def exp_func(x, a, b, c):
+        return a * np.exp(b * x) + c
 
 class CalibrationSession:
     def __init__(self, table):
@@ -26,25 +27,25 @@ class CalibrationSession:
         y = []
         
         for row in self.data:
-            if (row[1] != 0 and row[1] is not None):
+            if (row[2] != 0 and row[2] is not None):
                 channels.append(row[0])
-                x.append(row[1])
-                y.append(row[2])
+                x.append(row[2])  # optical density
+                y.append(row[1])  # voltage
 
         x = np.array(x)
         y = np.array(y)
 
-        params, _ = curve_fit(LogFunction.log_func, x, y)
-        a, b = params
+        params, _ = curve_fit(ExpFunction.exp_func, x, y)
+        a, b, c = params
 
         # Compute R^2
-        y_pred = LogFunction.log_func(x, a, b)
+        y_pred = ExpFunction.exp_func(x, a, b, c)
         residuals = y - y_pred
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((y - np.mean(y))**2)
         r_squared = 1 - (ss_res / ss_tot)
 
-        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
+        return channels, x.tolist(), y.tolist(), ExpFunction(a, b, c), r_squared
 
     @staticmethod        
     def run_test_json_calibration():
@@ -63,22 +64,22 @@ class CalibrationSession:
         y = []
         
         for row in matrix:
-            if (row[1] != 0 and row[1] is not None):
+            if (row[2] != 0 and row[2] is not None):
                 channels.append(row[0])
-                x.append(row[1])
-                y.append(row[2])
+                x.append(row[2])  # optical density
+                y.append(row[1])  # voltage
 
         x = np.array(x)
         y = np.array(y)
 
-        params, _ = curve_fit(LogFunction.log_func, x, y)
-        a, b = params
+        params, _ = curve_fit(ExpFunction.exp_func, x, y)
+        a, b, c = params
 
         # Compute R^2
-        y_pred = LogFunction.log_func(x, a, b)
+        y_pred = ExpFunction.exp_func(x, a, b, c)
         residuals = y - y_pred
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((y - np.mean(y))**2)
         r_squared = 1 - (ss_res / ss_tot)
 
-        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
+        return channels, x.tolist(), y.tolist(), ExpFunction(a, b, c), r_squared
