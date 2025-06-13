@@ -50,13 +50,20 @@ class CalibrationView(tk.Frame):
 
         self.tree.bind("<Double-1>", self.on_double_click)
 
-        run_button = tk.Button(self, text="Run Calibration", command=self.run_calibration,
-                                font=("Arial", 12), width=16, height=2)
-        run_button.pack(side='top', anchor='e', pady=10)
+        button_frame = tk.Frame(self)
+        button_frame.pack(side='top', anchor='e', pady=10)
 
-        run_10_button = tk.Button(self, text="Run 10 Calibrations", command=self.run_10_calibrations,
-                                font=("Arial", 12), width=16, height=2)
-        run_10_button.pack(side='top', anchor='e', pady=10)
+        run_button = tk.Button(button_frame, text="Run Calibration", command=self.run_calibration,
+                       font=("Arial", 12), width=16, height=2)
+        run_button.pack(side='left', padx=5)
+
+        run_10_button = tk.Button(button_frame, text="Run 10 Calibrations", command=self.run_10_calibrations,
+                      font=("Arial", 12), width=16, height=2)
+        run_10_button.pack(side='left', padx=5)
+
+        run_test_button = tk.Button(button_frame, text="Run Fake Calibration", command=self.run_calibration_from_json,
+                        font=("Arial", 12), width=16, height=2)
+        run_test_button.pack(side='left', padx=5)
 
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
@@ -221,12 +228,12 @@ class CalibrationView(tk.Frame):
                     # Plot the fitted line
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     y_fit = a * np.log10(x_fit) + b
-                    ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+                    ax.plot(x_fit, y_fit, color='green', label='Fit: a*log(V)+b')
 
                     ax.legend()
 
                     # Annotate with equation and R²
-                    equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
+                    equation_text = f'y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
                     plt.text(0.10, 0.10, equation_text, transform=plt.gca().transAxes,
                             fontsize=10, verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.7))
 
