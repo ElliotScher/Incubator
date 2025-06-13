@@ -268,7 +268,7 @@ class CalibrationView(tk.Frame):
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
 
-        graph_channels, graph_V, graph_OD, log, r_squared, error_bars = self.calibration_session.run_calibration()
+        graph_channels, graph_V, graph_OD, log, r_squared, error_bars = self.calibration_session.run_test_json_calibration()
 
         fig, ax = plt.subplots(figsize=(5, 4))
 
