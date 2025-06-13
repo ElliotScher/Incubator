@@ -183,7 +183,7 @@ void runCalibrationState() {
       break;
 
     case CAL_READ_ANALOG:
-      delay(5000);
+      delay(10000);
       currentOD = analogRead(ODPin);
       calibrationState = CAL_TRANSMIT_DATA;
       break;
@@ -194,7 +194,7 @@ void runCalibrationState() {
 
       channelIterator++;
       if (channelIterator > channels) {
-        delay(5000);
+        delay(10000);
         Serial1.println("CMD:CALIBRATION_FINISHED");
         currentState = IDLE;
         calibrationState = CAL_NONE;
