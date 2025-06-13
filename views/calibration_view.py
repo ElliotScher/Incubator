@@ -267,15 +267,41 @@ class CalibrationView(tk.Frame):
 
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
-        graph_channels, graph_V, graph_OD, log = self.calibration_session.run_test_json_calibration()
+
+        graph_channels, graph_V, graph_OD, log, r_squared, error_bars = self.calibration_session.run_calibration()
 
         fig, ax = plt.subplots(figsize=(5, 4))
-        ax.scatter(graph_V, graph_OD, color='blue')
+
+        # Plot original data points without error bars
+        ax.plot(graph_V, graph_OD, 'o', color='blue', label='Measured OD')
+
+        # Plot error bars centered on the fit line
         a, b = log.a, log.b
+        graph_OD_fit = a * np.log10(graph_V) + b
+
+        # Draw custom vertical error bars centered on the fit line
+        for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
+            ax.vlines(x, y_fit - yerr, y_fit + yerr, color='red', linewidth=1)
+            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color='red')  # bottom cap
+            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color='red')  # top cap
+
+        # Plot the fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-        y_fit = a * np.log(x_fit) + b
-        ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
+        y_fit = a * np.log10(x_fit) + b
+        ax.plot(x_fit, y_fit, color='green', label='Fit: a*log(V)+b')
+
         ax.legend()
+
+        # Annotate with equation and R²
+        equation_text = f'y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
+        plt.text(0.10, 0.10, equation_text, transform=plt.gca().transAxes,
+                fontsize=10, verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.7))
+
+        for i, label in enumerate(graph_channels):
+            voltage = graph_V[i]
+            od = graph_OD[i]
+            annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
+            ax.annotate(annotation, (voltage, od), textcoords="offset points", xytext=(10, 10), ha='left', fontsize=8, bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3))
 
         for i, label in enumerate(graph_channels):
             ax.annotate(str(label), (graph_V[i], graph_OD[i]), textcoords="offset points", xytext=(5, 5), ha='left', fontsize=10)
