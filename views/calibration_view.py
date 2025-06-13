@@ -201,21 +201,21 @@ class CalibrationView(tk.Frame):
 
                     self.calibration_session = CalibrationSession(result_array)
 
-                    graph_channels, graph_V, graph_OD, log, r_squared = self.calibration_session.run_calibration()
+                    graph_channels, graph_V, graph_OD, log, r_squared, error_bars = self.calibration_session.run_calibration()
 
                     fig, ax = plt.subplots(figsize=(5, 4))
-                    ax.scatter(graph_V, graph_OD, color='blue')
+                    ax.errorbar(graph_V, graph_OD, yerr=error_bars, fmt='o', color='blue', ecolor='gray', capsize=3)
                     a, b = log.a, log.b
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     y_fit = a * np.log10(x_fit) + b
                     ax.plot(x_fit, y_fit, color='red', label='Fit: a*log(V)+b')
                     ax.legend()
 
-                     # Annotate with equation and R²
+                    # Annotate with equation and R²
                     equation_text = f'y = {a:.3f}ln(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}'
                     plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes,
                             fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.7))
-                    
+
                     for i, label in enumerate(graph_channels):
                         voltage = graph_V[i]
                         od = graph_OD[i]
@@ -237,6 +237,7 @@ class CalibrationView(tk.Frame):
                     self.canvas.draw()
                     self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
                     return
+
 
             # Poll again after 100 ms
             modal.after(100, poll_uart)

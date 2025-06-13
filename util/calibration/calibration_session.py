@@ -24,7 +24,7 @@ class CalibrationSession:
         channels = []
         x = []
         y = []
-        
+
         for row in self.data:
             if (row[1] != 0 and row[1] is not None):
                 channels.append(row[0])
@@ -39,12 +39,15 @@ class CalibrationSession:
 
         # Compute R^2
         y_pred = LogFunction.log_func(x, a, b)
-        residuals = y - y_pred
+        residuals = y - y_pred  # These are signed residuals
+        abs_residuals = np.abs(residuals)  # absolute residuals for error bars
+
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((y - np.mean(y))**2)
         r_squared = 1 - (ss_res / ss_tot)
 
-        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared
+        # Return residuals or absolute residuals as error bars
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
 
     @staticmethod        
     def run_test_json_calibration():
