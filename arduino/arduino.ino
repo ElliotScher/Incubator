@@ -10,7 +10,7 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 25, 625);
+StepperHomer homer(stepper, homingPin, 100, 25, 625, 10);
 ChannelStepper channelStepper(stepper, 50, 48, 800, 6.25);
 
 
@@ -19,7 +19,7 @@ int channels = 0;
 bool waitingForChannels = false;
 bool homed = false;
 int channelIterator = 0;
-int currentOD = 0;
+unsigned long currentOD = 0;
 
 enum SuperState {
   IDLE,
@@ -183,8 +183,14 @@ void runCalibrationState() {
       break;
 
     case CAL_READ_ANALOG:
-      delay(10000);
-      currentOD = analogRead(ODPin);
+      currentOD = 0;
+      delay(5000);
+      for (int i = 0; i < 100; i++) {
+        currentOD += analogRead(ODPin);
+        delay(10);
+      }
+      currentOD /= 100;
+      Serial.println(currentOD);
       calibrationState = CAL_TRANSMIT_DATA;
       break;
 

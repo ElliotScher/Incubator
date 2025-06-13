@@ -1,9 +1,9 @@
 #include "StepperHomer.h"
 #include <Arduino.h>
 
-StepperHomer::StepperHomer(AccelStepper& stepper, int homingPin, int postHomeSteps, float homingSpeed)
-  : stepper(stepper), homingPin(homingPin), preHomeSteps(preHomeSteps),
-    postHomeSteps(postHomeSteps), homingSpeed(homingSpeed) {
+StepperHomer::StepperHomer(AccelStepper& stepper, int homingPin, int postFastHomeSteps, int postSlowHomeSteps, float fastHomingSpeed, float slowHomingSpeed)
+  : stepper(stepper), homingPin(homingPin), preHomeSteps(preHomeSteps), postFastHomeSteps(postFastHomeSteps),
+    postSlowHomeSteps(postSlowHomeSteps), fastHomingSpeed(fastHomingSpeed), slowHomingSpeed(slowHomingSpeed) {
   pinMode(homingPin, INPUT);
   reset();
 }
@@ -12,27 +12,48 @@ void StepperHomer::update() {
   switch (state) {
     case PRE_HOME_MOVE:
       if (digitalRead(homingPin) == LOW) {
-        state = FIND_HOME;
+        state = FAST_HOME;
       } else {
-        stepper.setSpeed(homingSpeed);
+        stepper.setSpeed(fastHomingSpeed);
         stepper.runSpeed();
       }
       break;
 
-    case FIND_HOME:
+    case FAST_HOME:
       if (digitalRead(homingPin) == HIGH) {
         stepper.setCurrentPosition(0);
-        stepper.moveTo(postHomeSteps);
-        state = MOVE_AFTER_HOME;
+        stepper.moveTo(-postFastHomeSteps);
+        state = POST_FAST_HOME;
       } else {
-        stepper.setSpeed(homingSpeed);
+        stepper.setSpeed(fastHomingSpeed);
         stepper.runSpeed();
       }
       break;
 
-    case MOVE_AFTER_HOME:
+    case POST_FAST_HOME:
       if (stepper.distanceToGo() != 0) {
         stepper.run();
+      } else {
+        state = SLOW_HOME;
+        stepper.setSpeed(slowHomingSpeed);
+      }
+      break;
+
+    case SLOW_HOME:
+      if (digitalRead(homingPin) == HIGH) {
+        stepper.setCurrentPosition(0);
+        stepper.moveTo(postSlowHomeSteps);
+        stepper.setSpeed(slowHomingSpeed);
+        state = POST_SLOW_HOME;
+      } else {
+        stepper.setSpeed(slowHomingSpeed);
+        stepper.runSpeed();
+      }
+      break;
+
+    case POST_SLOW_HOME:
+      if (stepper.distanceToGo() != 0) {
+        stepper.runSpeed();
       } else {
         homed = true;
       }
