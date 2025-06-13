@@ -5,17 +5,20 @@ class MenuView(tk.Frame):
         super().__init__(parent)
         self.controller = controller
 
+        self.grid_rowconfigure((0, 1), weight=1)
+        self.grid_columnconfigure((0, 1), weight=1)
+
         label = tk.Label(self, text="Menu")
-        label.place(relx=0, rely=0, relwidth=1, relheight=0.25)
+        label.grid(row=0, column=0, sticky="nsew")
 
         button = tk.Button(self, text="Calibration",
                            command=lambda: controller.show_frame("CalibrationView"))
-        button.place(relx=0, rely=0.25, relwidth=1, relheight=0.25)
+        button.grid(row=0, column=1, sticky="nsew")
 
         button2 = tk.Button(self, text="Connection",
                             command=lambda: controller.show_frame("ConnectionView"))
-        button2.place(relx=0, rely=0.5, relwidth=1, relheight=0.25)
+        button2.grid(row=1, column=0, sticky="nsew")
 
         button3 = tk.Button(self, text="Run",
                             command=lambda: controller.show_frame("RunView"))
-        button3.place(relx=0, rely=0.75, relwidth=1, relheight=0.25)
+        button3.grid(row=1, column=1, sticky="nsew")
