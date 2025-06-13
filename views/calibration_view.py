@@ -201,7 +201,7 @@ class CalibrationView(tk.Frame):
 
                     self.calibration_session = CalibrationSession(result_array)
 
-                    graph_channels, graph_OD, graph_V, log, r_squared = self.calibration_session.run_calibration()
+                    graph_channels, graph_V, graph_OD, log, r_squared = self.calibration_session.run_calibration()
 
                     fig, ax = plt.subplots(figsize=(5, 4))
                     # Flip x and y: plot OD (x) vs Voltage (y)
