@@ -65,6 +65,9 @@ jobs:
           mkdir -p dists/stable/main/binary-arm64
           dpkg-scanpackages pool /dev/null | gzip -9c > dists/stable/main/binary-arm64/Packages.gz
 
+      - name: Install apt-utils (for apt-ftparchive)
+        run: sudo apt-get update && sudo apt-get install -y apt-utils
+
       - name: Generate Release file
         run: |
           cd apt-repo
