@@ -65,6 +65,10 @@ jobs:
           mkdir -p dists/stable/main/binary-arm64
           dpkg-scanpackages pool /dev/null | gzip -9c > dists/stable/main/binary-arm64/Packages.gz
 
+      - name: Generate Release file
+        run: |
+          cd apt-repo
+          apt-ftparchive release dists/stable > dists/stable/Release
 
       - name: Commit and push apt repo to gh-pages
         uses: peaceiris/actions-gh-pages@v3
