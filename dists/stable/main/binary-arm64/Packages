@@ -1,0 +1,13 @@
+Package: incubator
+Version: 1.0.0-20250614225104
+Architecture: arm64
+Maintainer: Your Name <you@example.com>
+Filename: pool/main/i/incubator/incubator_1.0.0-20250614225104_arm64.deb
+Size: 72184664
+MD5sum: 99a38437002fece9f92f2927a1c035d2
+SHA1: 226cf696e80a0a207f182e5681d6c83f6c870ad6
+SHA256: d571824183214942e93e2f9b3f61ccfedb00a19209e6b19afc23aee2d8ce41f6
+Section: utils
+Priority: optional
+Description: PyInstaller-built incubator binary for Raspberry Pi
+
