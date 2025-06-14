@@ -8,7 +8,7 @@ class MenuView(tk.Frame):
         self.grid_rowconfigure((0, 1), weight=1)
         self.grid_columnconfigure((0, 1), weight=1)
 
-        label = tk.Label(self, text="Menu")
+        label = tk.Label(self, text="Menu", font=("Arial", 56))
         label.grid(row=0, column=0, sticky="nsew")
 
         button = tk.Button(self, text="Calibration",
