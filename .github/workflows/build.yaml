@@ -1,20 +1,59 @@
-name: Build All Platforms
+name: Build and Deploy to APT
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install -r requirements.txt
-      - run: ./build.sh
-      - run: ldd --version
-      - uses: actions/upload-artifact@v4
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build binary with PyInstaller
+        run: ./build.sh
+
+      - name: Create .deb package
+        run: |
+          APP_NAME="incubator"
+          VERSION="1.0.0"
+          ARCH="arm64"
+          mkdir -p debpkg/usr/local/bin
+          cp dist/main debpkg/usr/local/bin/$APP_NAME
+          chmod +x debpkg/usr/local/bin/$APP_NAME
+
+          mkdir -p debpkg/DEBIAN
+          cat <<EOF > debpkg/DEBIAN/control
+          Package: $APP_NAME
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: $ARCH
+          Maintainer: Your Name <you@example.com>
+          Description: PyInstaller-based $APP_NAME binary for Raspberry Pi
+          EOF
+
+          dpkg-deb --build debpkg ${APP_NAME}_${VERSION}_${ARCH}.deb
+
+      - name: Prepare APT repo structure
+        run: |
+          mkdir -p apt-repo
+          cp incubator_1.0.0_arm64.deb apt-repo/
+          cd apt-repo
+          dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
+
+      - name: Upload to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: linux-bin
-          path: dist/main
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./apt-repo
+          publish_branch: gh-pages
