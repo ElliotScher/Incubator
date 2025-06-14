@@ -59,11 +59,13 @@ jobs:
           mkdir -p apt-repo/pool/main/i/incubator
           cp incubator_${{ steps.version.outputs.VERSION }}_arm64.deb apt-repo/pool/main/i/incubator/
 
-      - name: Create Packages.gz index
+      - name: Create Packages index
         run: |
           cd apt-repo
           mkdir -p dists/stable/main/binary-arm64
-          dpkg-scanpackages pool /dev/null | gzip -9c > dists/stable/main/binary-arm64/Packages.gz
+          dpkg-scanpackages pool /dev/null > dists/stable/main/binary-arm64/Packages
+          gzip -9c dists/stable/main/binary-arm64/Packages > dists/stable/main/binary-arm64/Packages.gz
+
 
       - name: Install apt-utils (for apt-ftparchive)
         run: sudo apt-get update && sudo apt-get install -y apt-utils
