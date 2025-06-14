@@ -62,8 +62,9 @@ jobs:
       - name: Create Packages.gz index
         run: |
           cd apt-repo
+          mkdir -p dists/stable/main/binary-arm64
           dpkg-scanpackages pool /dev/null | gzip -9c > dists/stable/main/binary-arm64/Packages.gz
-        # Note: You may need to create the full directory tree beforehand
+
 
       - name: Commit and push apt repo to gh-pages
         uses: peaceiris/actions-gh-pages@v3
