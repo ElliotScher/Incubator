@@ -60,7 +60,7 @@ void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
   stepper.setMaxSpeed(3000);
-  stepper.setAcceleration(6000);
+  stepper.setAcceleration(3000);
 }
 
 void loop() {
@@ -201,7 +201,7 @@ void runCalibrationState() {
 
       channelIterator++;
       if (channelIterator > channels) {
-        delay(10000);
+        delay(1000);
         Serial1.println("CMD:CALIBRATION_FINISHED");
         currentState = IDLE;
         calibrationState = CAL_NONE;
@@ -294,11 +294,11 @@ void runReactionState() {
 
       channelIterator++;
       if (channelIterator > channels) {
-        delay(10000);
+        delay(1000);
         Serial1.println("CMD:CALIBRATION_FINISHED");
-        calibrationState = CAL_NONE;
-      } else if (/*the time for agitation is not 0*/) {
-        calibrationState = REACT_AGITATE;
+        reactionState = REACT_NONE;
+      } else if (targetAgitations != 0) {
+        reactionState = REACT_AGITATE;
       } else {
         reactionState = REACT_MOVE_TO_POSITION;
       }

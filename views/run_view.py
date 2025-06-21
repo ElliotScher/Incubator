@@ -39,7 +39,7 @@ class RunView(tk.Frame):
         self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings")
         self.tree.heading("Selected", text="Selected")
         self.tree.heading("Index", text="Index")
-        self.tree.column("Selected", width=80, anchor="center")
+        self.tree.column("Selected", width=30, anchor="center")
         self.tree.column("Index", width=50, anchor="center")
         self.tree.pack(fill="both", expand=True)
 
@@ -51,6 +51,9 @@ class RunView(tk.Frame):
 
         button_frame = tk.Frame(self)
         button_frame.pack(side='top', anchor='e', pady=10)
+
+        right_frame = tk.Frame(self)
+        right_frame.pack(side="left", fill="both", expand=True)
 
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
