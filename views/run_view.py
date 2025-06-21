@@ -40,7 +40,13 @@ class RunView(tk.Frame):
         self.tree.heading("Index", text="Idx")
         self.tree.column("Selected", width=25, minwidth=20, anchor="center", stretch=False)
         self.tree.column("Index", width=40, minwidth=30, anchor="center", stretch=False)
-        self.tree.pack(fill="y", expand=False)
+        self.tree.pack(side="left", fill="y", expand=False)
+
+        # Make left_frame take up 1/4 of the parent width
+        self.update_idletasks()
+        total_width = self.winfo_width() or 800  # fallback if not yet rendered
+        left_frame.config(width=int(total_width * 0.25))
+        left_frame.pack_propagate(False)
 
         # Insert 50 rows with default selected state "[ ]"
         for i in range(50):
