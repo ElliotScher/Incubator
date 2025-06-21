@@ -38,7 +38,7 @@ class RunView(tk.Frame):
         self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings", height=15)
         self.tree.heading("Selected", text="Sel")
         self.tree.heading("Index", text="Idx")
-        self.tree.column("Selected", width=25, minwidth=20, anchor="center", stretch=False)
+        self.tree.column("Selected", width=50, minwidth=20, anchor="center", stretch=False)
         self.tree.column("Index", width=40, minwidth=30, anchor="center", stretch=False)
         self.tree.pack(side="left", fill="y", expand=False)
 
