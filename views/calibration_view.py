@@ -61,10 +61,6 @@ class CalibrationView(tk.Frame):
                       font=("Arial", 12), width=16, height=2)
         run_10_button.pack(side='left', padx=5)
 
-        # run_test_button = tk.Button(button_frame, text="Run Fake Calibration", command=self.run_calibration_from_json,
-        #                 font=("Arial", 12), width=16, height=2)
-        # run_test_button.pack(side='left', padx=5)
-
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
 

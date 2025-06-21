@@ -7,7 +7,7 @@ from views.run_view import RunView
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Cam's Project")
+        self.title("Incubator")
         self.minsize(1920, 1080)
         self.maxsize(1920, 1080)
 

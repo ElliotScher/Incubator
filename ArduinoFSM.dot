@@ -19,8 +19,6 @@ digraph {
     move_to_position_reaction [color = purple] // one full rotation backwards, then forwards to position
     read_analog_input_reaction [color = purple]
     transmit_reaction_data [color = purple]
-    wait_for_gazoscan_data [color = purple]
-    send_gazoscan_flag [color = purple]
 
     boot -> start
 
@@ -34,7 +32,6 @@ digraph {
     test_connection -> transmit_ping
     transmit_ping -> test_connection
 
-
     calibrate -> idle
     calibrate -> receive_channels
     receive_channels -> home_wheel_calibration
@@ -43,20 +40,16 @@ digraph {
     move_to_position_calibration -> move_to_position_calibration
     read_analog_input_calibration -> transmit_calibration_data
     transmit_calibration_data -> move_to_position_calibration
-    move_to_position_calibration -> calibrate
+    transmit_calibration_data -> calibrate
 
     run_reaction -> idle
     run_reaction -> home_wheel_reaction
-    home_wheel_reaction -> agitate_reaction
     home_wheel_reaction -> move_to_position_reaction
     agitate_reaction -> home_wheel_reaction
-    move_to_position_reaction -> home_wheel_reaction
     move_to_position_reaction -> read_analog_input_reaction
     move_to_position_reaction -> move_to_position_reaction
-    move_to_position_reaction -> run_reaction
     read_analog_input_reaction -> transmit_reaction_data
-    transmit_reaction_data -> wait_for_gazoscan_data
-    wait_for_gazoscan_data -> send_gazoscan_flag
-    send_gazoscan_flag -> run_reaction
-    send_gazoscan_flag -> move_to_position_reaction
+    transmit_reaction_data -> move_to_position_reaction
+    transmit_reaction_data -> agitate_reaction
+    transmit_reaction_data -> run_reaction
 }
