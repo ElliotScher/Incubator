@@ -17,7 +17,7 @@ class RunView(tk.Frame):
         self.canvas = None
         self.ser = UARTUtil.open_port()
 
-        label = tk.Label(self, text="Calibration", font=("Arial", 18))
+        label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
 
         button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"),
@@ -25,8 +25,7 @@ class RunView(tk.Frame):
         button.pack(side='top', anchor='e')
 
         info_text = (
-            "Select the rows you want to include.\n"
-            "Click the checkbox to toggle selection. Double-click is disabled."
+            "Add text here"
         )
         info_label = tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12))
         info_label.pack(pady=(0, 10))
@@ -36,12 +35,12 @@ class RunView(tk.Frame):
         left_frame.pack(side="left", fill='both', expand=True)
 
         # Only two columns now: Selected and Index
-        self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings")
-        self.tree.heading("Selected", text="Selected")
-        self.tree.heading("Index", text="Index")
-        self.tree.column("Selected", width=30, anchor="center")
-        self.tree.column("Index", width=50, anchor="center")
-        self.tree.pack(fill="both", expand=True)
+        self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings", height=15)
+        self.tree.heading("Selected", text="Sel")
+        self.tree.heading("Index", text="Idx")
+        self.tree.column("Selected", width=25, minwidth=20, anchor="center", stretch=False)
+        self.tree.column("Index", width=40, minwidth=30, anchor="center", stretch=False)
+        self.tree.pack(fill="y", expand=False)
 
         # Insert 50 rows with default selected state "[ ]"
         for i in range(50):
