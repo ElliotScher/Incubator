@@ -27,9 +27,9 @@ class CalibrationView(tk.Frame):
         button.pack(side='top', anchor='e')
 
         info_text = (
-            "Enter calibration values (0-100) in the table below.\n"
-            "Double-click a cell to edit. Select a row and press Delete to remove it."
+            "put text here"
         )
+        
         info_label = tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12))
         info_label.pack(pady=(0, 10))
 

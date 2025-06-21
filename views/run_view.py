@@ -17,7 +17,7 @@ class RunView(tk.Frame):
         self.canvas = None
         self.ser = UARTUtil.open_port()
 
-        label = tk.Label(self, text="Calibration", font=("Arial", 18))
+        label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
 
         button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"),
@@ -25,9 +25,9 @@ class RunView(tk.Frame):
         button.pack(side='top', anchor='e')
 
         info_text = (
-            "Enter calibration values (0-100) in the table below.\n"
-            "Double-click a cell to edit. Select a row and press Delete to remove it."
+            "put text here"
         )
+
         info_label = tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12))
         info_label.pack(pady=(0, 10))
 
@@ -35,13 +35,11 @@ class RunView(tk.Frame):
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill='both', expand=True)
 
-        self.tree = ttk.Treeview(left_frame, columns=("Index", "OD", "Selected"), show="headings")
-        self.tree.heading("Index", text="Index")
-        self.tree.heading("OD", text="OD")
+        self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings")
         self.tree.heading("Selected", text="Selected")
+        self.tree.heading("Index", text="Index")
+        self.tree.column("Selected", width=25, anchor="center")
         self.tree.column("Index", width=50, anchor="center")
-        self.tree.column("OD", width=100, anchor="center")
-        self.tree.column("Selected", width=80, anchor="center")
         self.tree.pack(fill="both", expand=True)
 
         # Insert 50 rows with index
@@ -53,6 +51,9 @@ class RunView(tk.Frame):
 
         button_frame = tk.Frame(self)
         button_frame.pack(side='top', anchor='e', pady=10)
+        
+        right_frame = tk.Frame(self)
+        right_frame.pack(side="left", fill="both", expand=True)
 
     def on_return_key(self, event):
         item = self.tree.focus()
@@ -127,7 +128,7 @@ class RunView(tk.Frame):
         row_id = self.tree.identify_row(event.y)
         column = self.tree.identify_column(event.x)
 
-        if column != "#3":  # Only handle clicks on "Selected" column
+        if column != "#3":
             return
 
         current = self.tree.set(row_id, "Selected")
