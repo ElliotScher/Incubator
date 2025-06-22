@@ -118,7 +118,7 @@ class RunView(tk.Frame):
                 self.data[0].export_csv("reaction_data.csv")  # Export data when stopping
                 messagebox.showinfo("Info", "Reaction data exported to reaction_data.csv")
                 return
-            line = UARTUtil.read_line(self.ser)
+            line = UARTUtil.receive_data(self.ser)
             if line:
                 if "OD:" in line:
                     print("Received line:", line, "\n\n\n\n\n")
