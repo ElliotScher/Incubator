@@ -110,11 +110,13 @@ class RunView(tk.Frame):
 
     def run_reaction(self):
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
-        
+
         self._running = True  # Flag to control polling
 
         def poll_uart():
             if not self._running:
+                self.data[0].export_csv("reaction_data.csv")  # Export data when stopping
+                messagebox.showinfo("Info", "Reaction data exported to reaction_data.csv")
                 return
             line = UARTUtil.read_line(self.ser)
             if line:
