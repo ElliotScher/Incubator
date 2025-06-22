@@ -131,7 +131,7 @@ class RunView(tk.Frame):
                             optical_density=number,
                             temperature=None  # Assuming temperature is not provided in this line
                         )
-                        self.data_iterator = (self.data_iterator + 1) % len(self.data)
+                        self.data_iterator = (self.data_iterator + 1) % len(self.data - 1)
                     except ValueError:
                         pass  # Ignore malformed numbers
             # Schedule next poll

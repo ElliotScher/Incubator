@@ -10,7 +10,7 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 200, 50, 625, 10);
+StepperHomer homer(stepper, homingPin, 100, 50, 625, 10);
 ChannelStepper channelStepper(stepper, 50, 48, 1600, 6.25);
 
 
@@ -276,7 +276,7 @@ void runReactionState() {
       }
       break;
     case REACT_MOVE_TO_POSITION:
-      delay(1000);
+      channelStepper.moveToChannel(channelIterator);
       channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
       channelStepper.moveToChannel(channelIterator, CLOCKWISE);
       delay(1000);
