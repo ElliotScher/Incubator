@@ -336,29 +336,6 @@ class CalibrationView(tk.Frame):
 
             received_numbers = []
 
-            def update_stdev_label():
-                # Calculate stdev for each channel so far, show average
-                channel_voltages = defaultdict(list)
-                for run in results:
-                    for channel_index, voltage, _ in run:
-                        channel_voltages[channel_index].append(voltage)
-                # Add current run's received_numbers if available
-                for idx, voltage in enumerate(received_numbers):
-                    channel_index = idx + 1
-                    channel_voltages[channel_index].append(voltage)
-                stdevs = []
-                for voltages in channel_voltages.values():
-                    if len(voltages) > 1:
-                        stdevs.append(statistics.stdev(voltages))
-                if stdevs:
-                    avg_stdev = sum(stdevs) / len(stdevs)
-                    stdev_label.config(text=f"Current StDev: {avg_stdev:.4f}")
-                    # Save the last stdev to show after all runs
-                    last_stdev = avg_stdev
-                else:
-                    stdev_label.config(text=f"Current StDev: {last_stdev:.4f}")
-                    last_stdev = None
-
             def on_cancel():
                 UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
                 modal.grab_release()
@@ -391,7 +368,6 @@ class CalibrationView(tk.Frame):
                             number_str = line[3:]
                             number = float(number_str)
                             received_numbers.append(number)
-                            update_stdev_label()  # Update stdev label after each new number
                         except ValueError:
                             pass
 
@@ -429,6 +405,6 @@ class CalibrationView(tk.Frame):
                 stdev = statistics.stdev(voltages)
             else:
                 stdev = 0.0
-            variance_str += f"Channel {channel_index}: Voltage StDev = {stdev:.3f}\n"
+            variance_str += f"Channel {channel_index}: ADC StDev = {stdev:.3f}\n"
 
         messagebox.showinfo("Calibration Statistics", variance_str)
