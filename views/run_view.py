@@ -127,7 +127,7 @@ class RunView(tk.Frame):
                         number_str = line[3:]  # Everything after "OD:"
                         number = float(number_str)
                         self.data[self.data_iterator].add_entry(
-                            timestamp_utc=np.datetime64('now', 'ms'),
+                            time=np.datetime64('now', 'ms'),
                             optical_density=number,
                             temperature=None  # Assuming temperature is not provided in this line
                         )

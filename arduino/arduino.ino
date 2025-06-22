@@ -272,11 +272,11 @@ void runReactionState() {
       currentAgitations++;
       if (currentAgitations >= targetAgitations) {
         reactionState = REACT_MOVE_TO_POSITION;
+        currentAgitations = 1;
       }
       break;
     case REACT_MOVE_TO_POSITION:
       delay(1000);
-      channelStepper.moveToChannel(channelIterator);
       channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
       channelStepper.moveToChannel(channelIterator, CLOCKWISE);
       delay(1000);
