@@ -19,7 +19,9 @@ class RunView(tk.Frame):
         self.ser = UARTUtil.open_port()
 
         # Initialize self.data with 50 ReactionData objects
-        self.data = [ReactionData(channel=i + 1) for i in range(50)]
+        self.data = []
+        for i in range(50):
+            self.data.append(ReactionData(i))
         self.data_iterator = 0
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
@@ -94,8 +96,11 @@ class RunView(tk.Frame):
 
     def run_reaction(self):
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
+        self._running = True  # Flag to control polling
 
         def poll_uart():
+            if not self._running:
+                return
             line = UARTUtil.read_line(self.ser)
             if line:
                 if "OD:" in line:
@@ -111,6 +116,14 @@ class RunView(tk.Frame):
                         self.data_iterator = (self.data_iterator + 1) % len(self.data)
                     except ValueError:
                         pass  # Ignore malformed numbers
+            # Schedule next poll
+            self.after(100, poll_uart)  # Poll every 100 ms
+
+        poll_uart()
+
+    def cancel_reaction(self):
+        self._running = False  # Stop polling
+        UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
                 
 
         

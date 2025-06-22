@@ -128,7 +128,7 @@ void checkCalibrationStateSerial() {
     if (c == '\n') {
       calibrationStateInputBuffer.trim();  // Trim any extra whitespace
 
-      Serial.println(calibrationStateInputBuffer);
+//      Serial.println(calibrationStateInputBuffer);
 
       if (calibrationStateInputBuffer == "CMD:CANCEL_CALIBRATION") {
         stepper.stop();
@@ -137,8 +137,8 @@ void checkCalibrationStateSerial() {
       } else if (calibrationStateInputBuffer.startsWith("CHANNELS:")) {
         String numberStr = calibrationStateInputBuffer.substring(9);  // After "CHANNELS:"
         channels = numberStr.toInt();  // Convert to integer
-        Serial.print("Parsed channels: ");
-        Serial.println(channels);
+//        Serial.print("Parsed channels: ");
+//        Serial.println(channels);
       }
 
       calibrationStateInputBuffer = "";  // Clear buffer for next message
@@ -187,11 +187,13 @@ void runCalibrationState() {
       currentOD = 0;
       delay(5000);
       for (int i = 0; i < 100; i++) {
-        currentOD += analogRead(ODPin);
+        int OD = analogRead(ODPin);
+        Serial.println(OD);
+        currentOD += OD;
         delay(10);
       }
       currentOD /= 100;
-      Serial.println(currentOD);
+//      Serial.println(currentOD);
       calibrationState = CAL_TRANSMIT_DATA;
       break;
 
@@ -222,7 +224,7 @@ void checkReactionStateSerial() {
     if (c == '\n') {
       reactionStateInputBuffer.trim();  // Trim any extra whitespace
 
-      Serial.println(reactionStateInputBuffer);
+//      Serial.println(reactionStateInputBuffer);
 
       if (reactionStateInputBuffer == "CMD:CANCEL_REACTION") {
         stepper.stop();
@@ -231,8 +233,8 @@ void checkReactionStateSerial() {
       } else if (reactionStateInputBuffer.startsWith("AGITATIONS:")) {
         String numberStr = reactionStateInputBuffer.substring(11);  // After "AGITATIONS:"
         targetAgitations = numberStr.toInt();  // Convert to integer
-        Serial.print("Agitations: ");
-        Serial.println(targetAgitations);
+//        Serial.print("Agitations: ");
+//        Serial.println(targetAgitations);
       }
 
       reactionStateInputBuffer = "";  // Clear buffer for next message
@@ -285,7 +287,7 @@ void runReactionState() {
         delay(10);
       }
       currentOD /= 100;
-      Serial.println(currentOD);
+//      Serial.println(currentOD);
       reactionState = REACT_TRANSMIT_DATA;
       break;
     case REACT_TRANSMIT_DATA:

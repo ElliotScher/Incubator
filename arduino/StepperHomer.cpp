@@ -41,7 +41,9 @@ void StepperHomer::update() {
 
     case SLOW_HOME:
       if (digitalRead(homingPin) == HIGH) {
-        stepper.setCurrentPosition(0);
+        if (abs(stepper.currentPosition()) > 4) {
+          stepper.setCurrentPosition(0);
+        }
         stepper.moveTo(postSlowHomeSteps);
         stepper.setSpeed(slowHomingSpeed);
         state = POST_SLOW_HOME;
