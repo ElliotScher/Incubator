@@ -19,7 +19,8 @@ class RunView(tk.Frame):
         self.ser = UARTUtil.open_port()
 
         # Initialize self.data with 50 ReactionData objects
-        self.data = [ReactionData() for _ in range(50)]
+        self.data = [ReactionData(channel=i + 1) for i in range(50)]
+        self.data_iterator = 0
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
@@ -102,9 +103,12 @@ class RunView(tk.Frame):
                     try:
                         number_str = line[3:]  # Everything after "OD:"
                         number = float(number_str)
-
-
-
+                        self.data[self.data_iterator].add_entry(
+                            timestamp_utc=np.datetime64('now', 'ms'),
+                            optical_density=number,
+                            temperature=None  # Assuming temperature is not provided in this line
+                        )
+                        self.data_iterator = (self.data_iterator + 1) % len(self.data)
                     except ValueError:
                         pass  # Ignore malformed numbers
                 

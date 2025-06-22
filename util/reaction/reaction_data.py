@@ -24,3 +24,6 @@ class ReactionData:
 
     def clear(self):
         self.data = pd.DataFrame(columns=['time', 'optical_density', 'temperature'])
+
+    def export_csv(self, filepath):
+        self.data.to_csv(filepath, index=False)

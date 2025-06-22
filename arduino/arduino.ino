@@ -295,7 +295,6 @@ void runReactionState() {
       channelIterator++;
       if (channelIterator > channels) {
         delay(1000);
-        Serial1.println("CMD:CALIBRATION_FINISHED");
         reactionState = REACT_NONE;
       } else if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
