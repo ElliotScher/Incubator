@@ -332,7 +332,7 @@ class CalibrationView(tk.Frame):
             stdev_label = tk.Label(modal, text=f"Current StDev: {last_stdev}", font=("Arial", 11))
             stdev_label.pack(pady=(0, 10))
 
-            avg_label = tk.Label(modal, text=f"Current Mean: {avg}", font=("Arial", 11))
+            avg_label = tk.Label(modal, text=f"Current Mean: {last_avg}", font=("Arial", 11))
             avg_label.pack(pady=(0, 10))
 
             label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
