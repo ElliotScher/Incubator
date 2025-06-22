@@ -122,7 +122,8 @@ class RunView(tk.Frame):
             line = UARTUtil.receive_data(self.ser)
             if line:
                 if "OD:" in line:
-                    print("Received line:", line, "\n\n\n\n\n")
+                    print("Processing Channel ", self.data_iterator + 1)
+                    print("Received line:", line, "\n")
                     try:
                         number_str = line[3:]  # Everything after "OD:"
                         number = float(number_str)
@@ -131,7 +132,10 @@ class RunView(tk.Frame):
                             optical_density=number,
                             temperature=None  # Assuming temperature is not provided in this line
                         )
-                        self.data_iterator = (self.data_iterator + 1) % len(self.data - 1)
+                        self.data_iterator = (self.data_iterator + 1) % len(self.data)
+                        if (self.data_iterator > 50):
+                            # Reset iterator if it reaches the end
+                            self.data_iterator = 0
                     except ValueError:
                         pass  # Ignore malformed numbers
             # Schedule next poll

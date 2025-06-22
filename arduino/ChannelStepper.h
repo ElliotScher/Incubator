@@ -31,4 +31,6 @@ public:
 
   void moveToChannel(int targetChannel, RotationDirection direction);
   void moveToChannel(int targetChannel);
+
+  void fullRevolution(RotationDirection direction);
 };

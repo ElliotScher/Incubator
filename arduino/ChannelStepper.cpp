@@ -71,3 +71,18 @@ void ChannelStepper::moveToChannel(int targetChannel) {
     moveToChannel(targetChannel, COUNTER_CLOCKWISE);
   }
 }
+
+void ChannelStepper::fullRevolution(RotationDirection direction) {
+  int targetChannel = currentChannel;  // Stay on same channel
+  long deltaSteps = static_cast<long>(totalChannels) * stepsPerChannel;
+
+  if (direction == CLOCKWISE) {
+    stepper.moveTo(stepper.currentPosition() - deltaSteps);
+  } else {
+    stepper.moveTo(stepper.currentPosition() + deltaSteps);
+  }
+
+  while (stepper.distanceToGo() != 0) {
+    stepper.run();
+  }
+}

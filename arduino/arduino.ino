@@ -267,8 +267,8 @@ void runReactionState() {
       }
       break;
     case REACT_AGITATE:
-      channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
-      channelStepper.moveToChannel(channelIterator, CLOCKWISE);
+      channelStepper.fullRevolution(COUNTER_CLOCKWISE);
+      channelStepper.fullRevolution(CLOCKWISE);
       currentAgitations++;
       if (currentAgitations >= targetAgitations) {
         reactionState = REACT_MOVE_TO_POSITION;
@@ -277,8 +277,10 @@ void runReactionState() {
       break;
     case REACT_MOVE_TO_POSITION:
       channelStepper.moveToChannel(channelIterator);
-      channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
-      channelStepper.moveToChannel(channelIterator, CLOCKWISE);
+      if (targetAgitations == 0) {
+        channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
+        channelStepper.moveToChannel(channelIterator, CLOCKWISE);
+      }
       delay(1000);
       reactionState = REACT_READ_ANALOG;
       break;
