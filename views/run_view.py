@@ -67,6 +67,10 @@ class RunView(tk.Frame):
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
 
+        run_button = tk.Button(button_frame, text="Run Reaction", bg="green", fg="white", font=("Arial", 12, "bold"), width=10, height=2,
+                               command=self.run_reaction)
+        run_button.pack(side='left', padx=10)
+
         # E-Stop button in the top right corner
         estop_button = tk.Button(button_frame, text="E-Stop", bg="red", fg="white", font=("Arial", 12, "bold"),
                                 width=10, height=2, command=self.cancel_reaction)
