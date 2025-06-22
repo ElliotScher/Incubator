@@ -1,18 +1,18 @@
 Codename: stable
-Date: Sun, 22 Jun 2025 05:26:37 +0000
+Date: Sun, 22 Jun 2025 05:35:56 +0000
 MD5Sum:
- 0bfda2ee4ab18f5b1a36d35e613ff69a               55 Release
- 8c68f56af1930a62698c56d0b1848678              458 main/binary-arm64/Packages
- 000ec12cf542817f86427a87dda7e272              351 main/binary-arm64/Packages.gz
+ d4b4feb1d0beefdf7519d1d916c13785               55 Release
+ 6076734272b94569e6e522af41271e00              458 main/binary-arm64/Packages
+ 8b4c21fc79d2cf03ad2171d1343a29de              349 main/binary-arm64/Packages.gz
 SHA1:
- a9a47e66c9ea8c25c5551b9fb060a1894fb6015d               55 Release
- a40c5351496acca37a1504ef0218cd262958b8a5              458 main/binary-arm64/Packages
- 69a6e55ee136f554a6fddbc8ad6904b8f00dcd15              351 main/binary-arm64/Packages.gz
+ 8986e306992db24d4964c5bb34f9b928090dd2d2               55 Release
+ f70e8dc5fd4bf6d47890b1ab84978073b6095d89              458 main/binary-arm64/Packages
+ 11a80219691db8c9b85d0ba2526b734ab9e89b81              349 main/binary-arm64/Packages.gz
 SHA256:
- 36a743b6e059d76fd6d6c54145bafc30904c244422d6d70788ba07ea362a81af               55 Release
- e5ada78499a7be4c12d9cd7b3654dfb2dd684461152cf68c9b42f37c32ee0c0f              458 main/binary-arm64/Packages
- b37efcc96d2329445404c25f9a92244a727f39df25fb2b0e8138c3892c349154              351 main/binary-arm64/Packages.gz
+ 507efcfb21dd3aea382d93eaf4356232a5257f8f3241b70fb53d550dae808c4f               55 Release
+ 092692ce4ecb789d7992072e644efd2109e28b1746c579db4a49fb244085939b              458 main/binary-arm64/Packages
+ b539e6aa1209af3c7f7d46441a90454be6fb0a04c739205576ea5609b5eb5b13              349 main/binary-arm64/Packages.gz
 SHA512:
- 0eb61e0fc1384a7c26c4a511ed43b5c3481f14ca8a8e836c313e706f7e7f0141a4c6a55314cbb02ead51f6143c657746a0e51880bc37dea1f7f3511abda9a843               55 Release
- 6dee054ee4d9153b1e1ac60008b287b1d2593b52e93dcbe71ce8d19bd476e7e07e3caf184be33aa3856e5c25f9d88c752f87ef0eb8ada636270ae78fa3ff06b4              458 main/binary-arm64/Packages
- 61fd88f89f55299b37bf8f8112d0d0854f3e994cca9a83b787ed3a886791c443e714ce81a2036119207e6e8483a2e615f4e51151e771b4bc0ef13b527b33bca1              351 main/binary-arm64/Packages.gz
+ 9980f0c44d165f1e76b5a741ddd2b0929670b0ae37d88ce9d2b366acb7370e6b689cd69778c3cea130be01650495cca50f40c802229542e5cab859c7f0235255               55 Release
+ bc2b5b0577d8252d89620df13cdce08ba1a6b8745044fabcb4976bf3d89e31a95901dbc90ad7340e49b6e8573510fb04ee7f255161f4085395b4aef5e11bf4ca              458 main/binary-arm64/Packages
+ c35ce1b7c3481b9a7b5053a3f2687a4107005c198175bccbd5b80026f52f8d5af043bcea0edd38c79cf21292fbbe1b1b4f4c412047115f04ae2ded7f92df38c5              349 main/binary-arm64/Packages.gz
