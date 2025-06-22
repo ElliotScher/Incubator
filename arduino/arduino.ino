@@ -154,8 +154,8 @@ void runCalibrationState() {
   switch (calibrationState) {
     case CAL_NONE:
       channelIterator = 1;
-      homer.reset();
-      channelStepper.setCurrentChannel(48);
+//      homer.reset();
+//      channelStepper.setCurrentChannel(48);
       calibrationState = CAL_RECEIVE_CHANNELS;
       break;
       

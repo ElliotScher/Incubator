@@ -339,7 +339,7 @@ class CalibrationView(tk.Frame):
                 # Calculate stdev for each channel so far, show average
                 channel_voltages = defaultdict(list)
                 for run in results:
-                    for channel_index, voltage, od in run:
+                    for channel_index, voltage, _ in run:
                         channel_voltages[channel_index].append(voltage)
                 # Add current run's received_numbers if available
                 for idx, voltage in enumerate(received_numbers):
@@ -387,6 +387,7 @@ class CalibrationView(tk.Frame):
                             number_str = line[3:]
                             number = float(number_str)
                             received_numbers.append(number)
+                            update_stdev_label()  # Update stdev label after each new number
                         except ValueError:
                             pass
 
@@ -401,7 +402,6 @@ class CalibrationView(tk.Frame):
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
                                 result_array.append([channel_index, float(number), od])
                         results.append(result_array)
-                        update_stdev_label()
                         return
 
                 modal.after(100, poll_uart)
