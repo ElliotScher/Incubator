@@ -20,6 +20,8 @@ class CalibrationView(tk.Frame):
         self.canvas = None
         self.ser = UARTUtil.open_port()
 
+        self._last_avg_stdev = 0
+
         label = tk.Label(self, text="Calibration", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
 
@@ -352,8 +354,11 @@ class CalibrationView(tk.Frame):
                 if stdevs:
                     avg_stdev = sum(stdevs) / len(stdevs)
                     stdev_label.config(text=f"Current StDev: {avg_stdev:.4f}")
+                    # Save the last stdev to show after all runs
+                    self._last_avg_stdev = avg_stdev
                 else:
-                    stdev_label.config(text="Current StDev: N/A")
+                    stdev_label.config(text="Current StDev: {self._last_avg_stdev:.4f}")
+                    self._last_avg_stdev = None
 
             def on_cancel():
                 UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
