@@ -319,6 +319,7 @@ class CalibrationView(tk.Frame):
     def run_10_calibrations(self):
         results = []
         last_stdev = 0
+        last_avg = 0
         for _ in range(10):
             modal = tk.Toplevel(self)
             modal.title("Calibration Running")
@@ -330,6 +331,9 @@ class CalibrationView(tk.Frame):
 
             stdev_label = tk.Label(modal, text=f"Current StDev: {last_stdev}", font=("Arial", 11))
             stdev_label.pack(pady=(0, 10))
+
+            avg_label = tk.Label(modal, text=f"Current Mean: {avg}", font=("Arial", 11))
+            avg_label.pack(pady=(0, 10))
 
             label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
             label.pack(pady=10)
@@ -352,11 +356,14 @@ class CalibrationView(tk.Frame):
                         stdevs.append(statistics.stdev(voltages))
                 if stdevs:
                     avg_stdev = sum(stdevs) / len(stdevs)
+                    avg = sum(received_numbers) / len(received_numbers) if received_numbers else 0
                     stdev_label.config(text=f"Current StDev: {avg_stdev:.4f}")
-                    # Save the last stdev to show after all runs
+                    avg_label.config(text=f"Current Mean: {avg:.4f}")
                     last_stdev = avg_stdev
+                    last_avg = avg
                 else:
                     stdev_label.config(text=f"Current StDev: {last_stdev:.4f}")
+                    avg_label.config(text=f"Current Mean: {last_avg:.4f}")
                     last_stdev = None
 
             def on_cancel():
