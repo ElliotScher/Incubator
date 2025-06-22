@@ -142,10 +142,3 @@ class RunView(tk.Frame):
     def cancel_reaction(self):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
-                
-
-        
-            
-
-    def cancel_reaction(self):
-        UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
