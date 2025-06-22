@@ -7,6 +7,8 @@ class ReactionData:
         self.data = pd.DataFrame(columns=['time', 'optical_density', 'temperature'])
 
     def add_entry(self, time, optical_density, temperature):
+        if not isinstance(time, pd.Timestamp):
+            time = pd.to_datetime(time)
         new_entry = pd.DataFrame([{
             'time': time,
             'optical_density': optical_density,
