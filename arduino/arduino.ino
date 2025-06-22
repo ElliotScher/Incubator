@@ -61,26 +61,57 @@ void setup() {
   Serial1.begin(9600);
   stepper.setMaxSpeed(3000);
   stepper.setAcceleration(3000);
+  stepper.setMinPulseWidth(20);
 }
 
 void loop() {
-  switch (currentState) {
-    case IDLE:
-      runIdleState();
-      break;
+  static bool moving = false;
 
-    case TEST_CONNECTION:
-      runTestConnectionState();
-      break;
+  if (!moving) {
+    // Read 100 analog values and compute the average
+    long sum = 0;
+    for (int i = 0; i < 100; i++) {
+      sum += analogRead(ODPin);
+      delay(1);  // Optional: gives ADC time to settle and reduces CPU usage
+    }
+    int average = sum / 100;
 
-    case CALIBRATE:
-      runCalibrationState();
-      break;
+    // Print the average
+    Serial.print(average);
+    Serial.println(",");
 
-    case RUN_REACTION:
-      runReactionState();
-      break;
+    // Begin motor movement
+    stepper.move(1);
+    moving = true;
   }
+
+  // Run the stepper motor
+  stepper.run();
+
+  // When movement finishes, reset the flag and optionally wait
+  if (moving && stepper.distanceToGo() == 0) {
+    moving = false;
+    delay(1000);  // Optional pause between cycles
+  }
+
+  delay(1);  // Prevent tight-loop CPU overload
+//  switch (currentState) {
+//    case IDLE:
+//      runIdleState();
+//      break;
+//
+//    case TEST_CONNECTION:
+//      runTestConnectionState();
+//      break;
+//
+//    case CALIBRATE:
+//      runCalibrationState();
+//      break;
+//
+//    case RUN_REACTION:
+//      runReactionState();
+//      break;
+//  }
 }
 
 void checkSuperStateSerial() {
@@ -277,10 +308,6 @@ void runReactionState() {
       break;
     case REACT_MOVE_TO_POSITION:
       channelStepper.moveToChannel(channelIterator);
-      if (targetAgitations == 0) {
-        channelStepper.moveToChannel(channelIterator, COUNTER_CLOCKWISE);
-        channelStepper.moveToChannel(channelIterator, CLOCKWISE);
-      }
       delay(1000);
       reactionState = REACT_READ_ANALOG;
       break;
