@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import re
 from collections import defaultdict
+from util.reaction.reaction_data import ReactionData
 
 class RunView(tk.Frame):
     def __init__(self, parent, controller):
@@ -16,6 +17,9 @@ class RunView(tk.Frame):
         self.controller = controller
         self.canvas = None
         self.ser = UARTUtil.open_port()
+
+        # Initialize self.data with 50 ReactionData objects
+        self.data = [ReactionData() for _ in range(50)]
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side='top', anchor='n', pady=10)
@@ -60,6 +64,11 @@ class RunView(tk.Frame):
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
 
+        # E-Stop button in the top right corner
+        estop_button = tk.Button(button_frame, text="E-Stop", bg="red", fg="white", font=("Arial", 12, "bold"),
+                                width=10, height=2, command=self.cancel_reaction)
+        estop_button.pack(side='right', padx=10)
+
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
         if region != "cell":
@@ -81,3 +90,27 @@ class RunView(tk.Frame):
             if self.tree.set(item, "Selected") == "[x]":
                 selected.append(self.tree.set(item, "Index"))
         return selected
+
+    def run_reaction(self):
+        UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
+
+        def poll_uart():
+            line = UARTUtil.read_line(self.ser)
+            if line:
+                if "OD:" in line:
+                    print("Received line:", line, "\n\n\n\n\n")
+                    try:
+                        number_str = line[3:]  # Everything after "OD:"
+                        number = float(number_str)
+
+
+
+                    except ValueError:
+                        pass  # Ignore malformed numbers
+                
+
+        
+            
+
+    def cancel_reaction(self):
+        UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")

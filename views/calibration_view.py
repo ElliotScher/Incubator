@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
+from util.calibration.calibration_curve import LogarithmicCalibrationCurve
 from util.calibration.calibration_session import CalibrationSession
 from util.uart_util import UARTUtil
 import matplotlib
@@ -253,6 +254,7 @@ class CalibrationView(tk.Frame):
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
                     self.canvas.draw()
                     self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+                    LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
                     return
 
 
@@ -319,13 +321,39 @@ class CalibrationView(tk.Frame):
         for _ in range(10):
             modal = tk.Toplevel(self)
             modal.title("Calibration Running")
-            modal.geometry("300x150")
+            modal.geometry("350x200")
             modal.resizable(False, False)
 
+            run_label = tk.Label(modal, text=f"Run {_ + 1} of 10", font=("Arial", 12, "bold"))
+            run_label.pack(pady=(10, 0))
+
+            stdev_label = tk.Label(modal, text="Current StDev: N/A", font=("Arial", 11))
+            stdev_label.pack(pady=(0, 10))
+
             label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
-            label.pack(pady=20)
+            label.pack(pady=10)
 
             received_numbers = []
+
+            def update_stdev_label():
+                # Calculate stdev for each channel so far, show average
+                channel_voltages = defaultdict(list)
+                for run in results:
+                    for channel_index, voltage, od in run:
+                        channel_voltages[channel_index].append(voltage)
+                # Add current run's received_numbers if available
+                for idx, voltage in enumerate(received_numbers):
+                    channel_index = idx + 1
+                    channel_voltages[channel_index].append(voltage)
+                stdevs = []
+                for voltages in channel_voltages.values():
+                    if len(voltages) > 1:
+                        stdevs.append(statistics.stdev(voltages))
+                if stdevs:
+                    avg_stdev = sum(stdevs) / len(stdevs)
+                    stdev_label.config(text=f"Current StDev: {avg_stdev:.4f}")
+                else:
+                    stdev_label.config(text="Current StDev: N/A")
 
             def on_cancel():
                 UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
@@ -373,6 +401,7 @@ class CalibrationView(tk.Frame):
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
                                 result_array.append([channel_index, float(number), od])
                         results.append(result_array)
+                        update_stdev_label()
                         return
 
                 modal.after(100, poll_uart)
