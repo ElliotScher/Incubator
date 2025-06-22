@@ -271,7 +271,7 @@ void runReactionState() {
       channelStepper.moveToChannel(channelIterator, CLOCKWISE);
       currentAgitations++;
       if (currentAgitations >= targetAgitations) {
-        reactionState = REACT_HOME_WHEEL;
+        reactionState = REACT_MOVE_TO_POSITION;
       }
       break;
     case REACT_MOVE_TO_POSITION:
@@ -298,10 +298,8 @@ void runReactionState() {
       Serial1.println(currentOD);
 
       channelIterator++;
-      if (channelIterator > channels) {
-        delay(1000);
-        reactionState = REACT_NONE;
-      } else if (targetAgitations != 0) {
+      channelIterator %= 50;
+      if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
       } else {
         reactionState = REACT_MOVE_TO_POSITION;

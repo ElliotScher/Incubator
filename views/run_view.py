@@ -109,6 +109,7 @@ class RunView(tk.Frame):
         return selected
 
     def run_reaction(self):
+        UARTUtil.send_data(self.ser, "AGITATIONS:" + str(self.agitation_var.get()))
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
 
         self._running = True  # Flag to control polling
