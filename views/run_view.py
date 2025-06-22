@@ -67,6 +67,16 @@ class RunView(tk.Frame):
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
 
+        # Input for agitation count
+        agitation_frame = tk.Frame(button_frame)
+        agitation_frame.pack(side='left', padx=10)
+
+        tk.Label(agitation_frame, text="Agitations:", font=("Arial", 10)).pack()
+        self.agitation_var = tk.IntVar(value=5)  # default value
+        agitation_entry = tk.Entry(agitation_frame, textvariable=self.agitation_var, width=5)
+        agitation_entry.pack()
+
+
         run_button = tk.Button(button_frame, text="Run Reaction", bg="green", fg="white", font=("Arial", 12, "bold"), width=10, height=2,
                                command=self.run_reaction)
         run_button.pack(side='left', padx=10)
@@ -100,6 +110,7 @@ class RunView(tk.Frame):
 
     def run_reaction(self):
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
+        
         self._running = True  # Flag to control polling
 
         def poll_uart():

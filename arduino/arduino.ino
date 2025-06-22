@@ -78,6 +78,7 @@ void loop() {
       break;
 
     case RUN_REACTION:
+      runReactionState();
       break;
   }
 }
@@ -93,6 +94,8 @@ void checkSuperStateSerial() {
         currentState = TEST_CONNECTION;
       } else if (superStateInputBuffer == "CMD:CALIBRATE") {
         currentState = CALIBRATE;
+      } else if (superStateInputBuffer.substring(0, 11) == "AGITATIONS:") {
+        targetAgitations = superStateInputBuffer.substring(11).toInt();
       } else if (superStateInputBuffer == "CMD:RUNREACTION") {
         currentState = RUN_REACTION;
       } else if (superStateInputBuffer == "CMD:IDLE") {
