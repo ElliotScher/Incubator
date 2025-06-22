@@ -328,13 +328,36 @@ class CalibrationView(tk.Frame):
             run_label = tk.Label(modal, text=f"Run {_ + 1} of 10", font=("Arial", 12, "bold"))
             run_label.pack(pady=(10, 0))
 
-            stdev_label = tk.Label(modal, text="Current StDev: N/A", font=("Arial", 11))
+            stdev_label = tk.Label(modal, text=f"Current StDev: {last_stdev}", font=("Arial", 11))
             stdev_label.pack(pady=(0, 10))
 
             label = tk.Label(modal, text="Calibration is running...\nPlease wait or cancel.", font=("Arial", 12))
             label.pack(pady=10)
 
             received_numbers = []
+
+            def update_stdev_label():
+                # Calculate stdev for each channel so far, show average
+                channel_voltages = defaultdict(list)
+                for run in results:
+                    for channel_index, voltage, _ in run:
+                        channel_voltages[channel_index].append(voltage)
+                # Add current run's received_numbers if available
+                for idx, voltage in enumerate(received_numbers):
+                    channel_index = idx + 1
+                    channel_voltages[channel_index].append(voltage)
+                stdevs = []
+                for voltages in channel_voltages.values():
+                    if len(voltages) > 1:
+                        stdevs.append(statistics.stdev(voltages))
+                if stdevs:
+                    avg_stdev = sum(stdevs) / len(stdevs)
+                    stdev_label.config(text=f"Current StDev: {avg_stdev:.4f}")
+                    # Save the last stdev to show after all runs
+                    last_stdev = avg_stdev
+                else:
+                    stdev_label.config(text=f"Current StDev: {last_stdev:.4f}")
+                    last_stdev = None
 
             def on_cancel():
                 UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
@@ -368,6 +391,7 @@ class CalibrationView(tk.Frame):
                             number_str = line[3:]
                             number = float(number_str)
                             received_numbers.append(number)
+                            update_stdev_label()  # Update stdev label after each new number
                         except ValueError:
                             pass
 

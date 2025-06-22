@@ -10,8 +10,8 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 100, 25, 625, 10);
-ChannelStepper channelStepper(stepper, 50, 48, 800, 6.25);
+StepperHomer homer(stepper, homingPin, 200, 50, 625, 10);
+ChannelStepper channelStepper(stepper, 50, 48, 1600, 6.25);
 
 
 // Calibration Variables
