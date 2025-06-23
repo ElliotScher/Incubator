@@ -150,11 +150,17 @@ class RunView(tk.Frame):
                     try:
                         number_str = line[3:]  # Everything after "OD:"
                         number = float(number_str)
+                        channel_index = self.data_iterator  # Capture current index
                         self.data[self.data_iterator].add_entry(
                             time=np.datetime64('now', 'ms'),
                             optical_density=number,
                             temperature=None  # Assuming temperature is not provided in this line
                         )
+
+                        csv_path = f"/var/tmp/channel_{channel_index + 1}_data.csv"
+                        self.data[channel_index].export_csv(csv_path)
+                        print(f"Exported CSV for channel {channel_index + 1} to {csv_path}")
+
                         self.data_iterator = (self.data_iterator + 1) % len(self.data)
                         if (self.data_iterator >= 50):
                             # Reset iterator if it reaches the end
