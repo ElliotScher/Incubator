@@ -11,6 +11,9 @@ import re
 from collections import defaultdict
 from util.reaction.reaction_data import ReactionData
 import time
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
 
 class RunView(tk.Frame):
     def __init__(self, parent, controller):
@@ -166,10 +169,6 @@ class RunView(tk.Frame):
     def cancel_reaction(self):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
-
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    import pandas as pd
 
     def update_plot(self, frame=None):
         if not hasattr(self, 'ax'):
