@@ -168,38 +168,38 @@ class RunView(tk.Frame):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
 
-def update_plot(self):
-    if not hasattr(self, 'plot_widget') or not hasattr(self, 'curve'):
-        return  # Plot not initialized yet
+    def update_plot(self):
+        if not hasattr(self, 'plot_widget') or not hasattr(self, 'curve'):
+            return  # Plot not initialized yet
 
-    self.plot_widget.clear()  # Clear old plots
+        self.plot_widget.clear()  # Clear old plots
 
-    selected_indices = self.get_selected_indices()
-    latest_time = None  # Keep track of latest time for scrolling
+        selected_indices = self.get_selected_indices()
+        latest_time = None  # Keep track of latest time for scrolling
 
-    colors = ['r', 'g', 'b', 'y', 'c', 'm', 'w']  # Cycle through colors
-    color_index = 0
+        colors = ['r', 'g', 'b', 'y', 'c', 'm', 'w']  # Cycle through colors
+        color_index = 0
 
-    for idx in selected_indices:
-        try:
-            df = self.data[int(idx) - 1].get_all()
-            if df.empty or 'time' not in df or 'optical_density' not in df:
+        for idx in selected_indices:
+            try:
+                df = self.data[int(idx) - 1].get_all()
+                if df.empty or 'time' not in df or 'optical_density' not in df:
+                    continue
+
+                # Convert time to milliseconds since epoch for plotting
+                times = df['time'].astype('int64') / 1e6  # Convert nanoseconds to milliseconds
+                ods = df['optical_density']
+
+                pen = pg.mkPen(color=colors[color_index % len(colors)], width=2)
+                self.plot_widget.plot(times, ods, pen=pen, name=f"Channel {idx}")
+                color_index += 1
+
+                if not times.empty:
+                    latest_time = max(latest_time, times.iloc[-1]) if latest_time is not None else times.iloc[-1]
+
+            except (IndexError, ValueError, KeyError, AttributeError):
                 continue
 
-            # Convert time to milliseconds since epoch for plotting
-            times = df['time'].astype('int64') / 1e6  # Convert nanoseconds to milliseconds
-            ods = df['optical_density']
-
-            pen = pg.mkPen(color=colors[color_index % len(colors)], width=2)
-            self.plot_widget.plot(times, ods, pen=pen, name=f"Channel {idx}")
-            color_index += 1
-
-            if not times.empty:
-                latest_time = max(latest_time, times.iloc[-1]) if latest_time is not None else times.iloc[-1]
-
-        except (IndexError, ValueError, KeyError, AttributeError):
-            continue
-
-    # Optional: auto-scroll to the latest time (last 60 seconds visible)
-    if latest_time is not None:
-        self.plot_widget.setXRange(latest_time - 60000, latest_time)
+        # Optional: auto-scroll to the latest time (last 60 seconds visible)
+        if latest_time is not None:
+            self.plot_widget.setXRange(latest_time - 60000, latest_time)
