@@ -165,6 +165,10 @@ class RunView(tk.Frame):
         return selected
 
     def run_reaction(self):
+        # Clear all ReactionData objects' dataframes
+        for rd in self.data:
+            rd.clear()
+        self.data_iterator = 0
         UARTUtil.send_data(self.ser, "AGITATIONS:" + str(self.agitation_var.get()))
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
 

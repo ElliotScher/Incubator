@@ -283,11 +283,11 @@ void runReactionState() {
     case REACT_READ_ANALOG:
       currentOD = 0;
       delay(1000);
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 10000; i++) {
         currentOD += analogRead(ODPin);
         delay(10);
       }
-      currentOD /= 100;
+      currentOD /= 10000;
 //      Serial.println(currentOD);
       reactionState = REACT_TRANSMIT_DATA;
       break;
