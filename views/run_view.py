@@ -168,7 +168,7 @@ class RunView(tk.Frame):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
 
-    def update_plot(self):
+    def update_plot(self, frame=None):
         if not hasattr(self, 'plot_widget') or not hasattr(self, 'curve'):
             return  # Plot not initialized yet
 
