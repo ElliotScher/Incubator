@@ -159,7 +159,7 @@ class RunView(tk.Frame):
                     except ValueError:
                         pass  # Ignore malformed numbers
             # Schedule next poll
-            self.update_plot(None)
+            self.update_plot()
             self.after(100, poll_uart)  # Poll every 100 ms
 
         poll_uart()
