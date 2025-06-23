@@ -144,6 +144,7 @@ class RunView(tk.Frame):
 
         self.last_usb_path = None
         self.after(3000, self.check_usb_and_copy)
+        self._running = False  # Flag to control polling
 
 
     def on_click(self, event):
