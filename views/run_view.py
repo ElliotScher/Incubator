@@ -156,7 +156,7 @@ class RunView(tk.Frame):
                             temperature=None  # Assuming temperature is not provided in this line
                         )
                         self.data_iterator = (self.data_iterator + 1) % len(self.data)
-                        if (self.data_iterator > 50):
+                        if (self.data_iterator >= 50):
                             # Reset iterator if it reaches the end
                             self.data_iterator = 0
                     except ValueError:
@@ -208,7 +208,7 @@ class RunView(tk.Frame):
 
         # Optional: auto-scroll to the latest time (last 60 seconds visible)
         if latest_time is not None:
-            start_time = latest_time - pd.Timedelta(seconds=60)
+            start_time = latest_time - pd.Timedelta(seconds=(60 * 30))
             self.ax.set_xlim(start_time, latest_time)
 
         self.ax.legend()
