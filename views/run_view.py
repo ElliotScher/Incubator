@@ -319,7 +319,7 @@ class RunView(tk.Frame):
         for mount_point in mounted:
             if mount_point != self.last_usb_path:
                 self.last_usb_path = mount_point
-                if not getattr(self, "_running", False):  # Only copy if NOT running
+                if not self._running:  # Only copy if NOT running
                     try:
                         src_dir = "/var/tmp/incubator/tmp_data"
                         dst_dir = os.path.join(mount_point, "reaction_backup")
