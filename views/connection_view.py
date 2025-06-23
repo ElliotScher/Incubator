@@ -1,6 +1,8 @@
 import time
 import tkinter as tk
 from util.uart_util import UARTUtil
+
+
 class ConnectionView(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -11,18 +13,15 @@ class ConnectionView(tk.Frame):
         label = tk.Label(self, text="Connection")
         label.pack(pady=10)
 
-        homeButton = tk.Button(self, text="Home",
-                           command=lambda: controller.show_frame("MenuView"))
+        homeButton = tk.Button(
+            self, text="Home", command=lambda: controller.show_frame("MenuView")
+        )
         homeButton.pack()
 
-        pingButton = tk.Button(
-            self, 
-            text="Ping", 
-            command=lambda: [self.ping_devices()]
-        )
+        pingButton = tk.Button(self, text="Ping", command=lambda: [self.ping_devices()])
         pingButton.pack()
 
-            # Create checkmark labels for UART and Gazoscan connectivity
+        # Create checkmark labels for UART and Gazoscan connectivity
         self.uart_status = tk.Label(self, text="✔", font=("Arial", 48), fg="gray")
         self.uart_status.pack(pady=5)
         self.uart_status_label = tk.Label(self, text="UART")
@@ -45,7 +44,7 @@ class ConnectionView(tk.Frame):
         # Ping UART device
         try:
             response = UARTUtil.receive_data(ser=self.ser)
-            UART_CONNECTED = 'ping' in response.lower()
+            UART_CONNECTED = "ping" in response.lower()
         except Exception as e:
             print(f"UART ping failed: {e}")
             UART_CONNECTED = False

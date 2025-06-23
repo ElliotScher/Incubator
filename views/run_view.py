@@ -6,7 +6,8 @@ import numpy as np
 from util.calibration.calibration_session import CalibrationSession
 from util.uart_util import UARTUtil
 import matplotlib
-matplotlib.use('TkAgg')
+
+matplotlib.use("TkAgg")
 import re
 from collections import defaultdict
 from util.reaction.reaction_data import ReactionData
@@ -14,6 +15,12 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
+import os
+import shutil
+import tempfile
+from datetime import datetime
+import zipfile
+
 
 class RunView(tk.Frame):
     def __init__(self, parent, controller):
@@ -29,27 +36,37 @@ class RunView(tk.Frame):
         self.data_iterator = 0
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
-        label.pack(side='top', anchor='n', pady=10)
+        label.pack(side="top", anchor="n", pady=10)
 
-        button = tk.Button(self, text="Home", command=lambda: controller.show_frame("MenuView"),
-                           font=("Arial", 12), width=10, height=2)
-        button.pack(side='top', anchor='e')
-
-        info_text = (
-            "Add text here"
+        button = tk.Button(
+            self,
+            text="Home",
+            command=lambda: controller.show_frame("MenuView"),
+            font=("Arial", 12),
+            width=10,
+            height=2,
         )
-        info_label = tk.Label(self, text=info_text, justify="left", fg="black", font=("Arial", 12))
+        button.pack(side="top", anchor="e")
+
+        info_text = "Add text here"
+        info_label = tk.Label(
+            self, text=info_text, justify="left", fg="black", font=("Arial", 12)
+        )
         info_label.pack(pady=(0, 10))
 
         # Treeview for calibration data
         left_frame = tk.Frame(self)
-        left_frame.pack(side="left", fill='both', expand=True)
+        left_frame.pack(side="left", fill="both", expand=True)
 
         # Only two columns now: Selected and Index
-        self.tree = ttk.Treeview(left_frame, columns=("Selected", "Index"), show="headings", height=15)
+        self.tree = ttk.Treeview(
+            left_frame, columns=("Selected", "Index"), show="headings", height=15
+        )
         self.tree.heading("Selected", text="✓")
         self.tree.heading("Index", text="Idx")
-        self.tree.column("Selected", width=50, minwidth=20, anchor="center", stretch=False)
+        self.tree.column(
+            "Selected", width=50, minwidth=20, anchor="center", stretch=False
+        )
         self.tree.column("Index", width=50, minwidth=30, anchor="center", stretch=False)
         self.tree.pack(side="left", fill="y", expand=False)
 
@@ -66,7 +83,7 @@ class RunView(tk.Frame):
         self.tree.bind("<Button-1>", self.on_click)
 
         button_frame = tk.Frame(self)
-        button_frame.pack(side='top', anchor='e', pady=10)
+        button_frame.pack(side="top", anchor="e", pady=10)
 
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
@@ -75,12 +92,12 @@ class RunView(tk.Frame):
 
         # Plotting Frame
         plot_frame = tk.Frame(right_frame)
-        plot_frame.pack(fill='both', expand=True)
+        plot_frame.pack(fill="both", expand=True)
 
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=plot_frame)
-        self.canvas.get_tk_widget().pack(fill='both', expand=True)
-        self.line, = self.ax.plot([], [], lw=2)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+        (self.line,) = self.ax.plot([], [], lw=2)
         self.ax.set_title("Optical Density vs Time")
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("OD")
@@ -89,25 +106,41 @@ class RunView(tk.Frame):
 
         self.lines = {}  # Dictionary to store Line2D objects keyed by index
 
-
         # Input for agitation count
         agitation_frame = tk.Frame(button_frame)
-        agitation_frame.pack(side='left', padx=10)
+        agitation_frame.pack(side="left", padx=10)
 
         tk.Label(agitation_frame, text="Agitations:", font=("Arial", 10)).pack()
         self.agitation_var = tk.IntVar(value=5)  # default value
-        agitation_entry = tk.Entry(agitation_frame, textvariable=self.agitation_var, width=5)
+        agitation_entry = tk.Entry(
+            agitation_frame, textvariable=self.agitation_var, width=5
+        )
         agitation_entry.pack()
 
-
-        run_button = tk.Button(button_frame, text="Run Reaction", bg="green", fg="white", font=("Arial", 12, "bold"), width=10, height=2,
-                               command=self.run_reaction)
-        run_button.pack(side='left', padx=10)
+        run_button = tk.Button(
+            button_frame,
+            text="Run Reaction",
+            bg="green",
+            fg="white",
+            font=("Arial", 12, "bold"),
+            width=10,
+            height=2,
+            command=self.run_reaction,
+        )
+        run_button.pack(side="left", padx=10)
 
         # E-Stop button in the top right corner
-        estop_button = tk.Button(button_frame, text="E-Stop", bg="red", fg="white", font=("Arial", 12, "bold"),
-                                width=10, height=2, command=self.cancel_reaction)
-        estop_button.pack(side='right', padx=10)
+        estop_button = tk.Button(
+            button_frame,
+            text="E-Stop",
+            bg="red",
+            fg="white",
+            font=("Arial", 12, "bold"),
+            width=10,
+            height=2,
+            command=self.cancel_reaction,
+        )
+        estop_button.pack(side="right", padx=10)
 
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
@@ -139,8 +172,12 @@ class RunView(tk.Frame):
 
         def poll_uart():
             if not self._running:
-                self.data[0].export_csv("reaction_data.csv")  # Export data when stopping
-                messagebox.showinfo("Info", "Reaction data exported to reaction_data.csv")
+                self.data[0].export_csv(
+                    "reaction_data.csv"
+                )  # Export data when stopping
+                messagebox.showinfo(
+                    "Info", "Reaction data exported to reaction_data.csv"
+                )
                 return
             line = UARTUtil.receive_data(self.ser)
             if line:
@@ -152,17 +189,19 @@ class RunView(tk.Frame):
                         number = float(number_str)
                         channel_index = self.data_iterator  # Capture current index
                         self.data[self.data_iterator].add_entry(
-                            time=np.datetime64('now', 'ms'),
+                            time=np.datetime64("now", "ms"),
                             optical_density=number,
-                            temperature=None  # Assuming temperature is not provided in this line
+                            temperature=None,  # Assuming temperature is not provided in this line
                         )
 
                         csv_path = f"/var/tmp/channel_{channel_index + 1}_data.csv"
                         self.data[channel_index].export_csv(csv_path)
-                        print(f"Exported CSV for channel {channel_index + 1} to {csv_path}")
+                        print(
+                            f"Exported CSV for channel {channel_index + 1} to {csv_path}"
+                        )
 
                         self.data_iterator = (self.data_iterator + 1) % len(self.data)
-                        if (self.data_iterator >= 50):
+                        if self.data_iterator >= 50:
                             # Reset iterator if it reaches the end
                             self.data_iterator = 0
                     except ValueError:
@@ -175,9 +214,41 @@ class RunView(tk.Frame):
     def cancel_reaction(self):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
+        # Create temporary directory
+        temp_dir = tempfile.mkdtemp(prefix="reaction_data_")
+
+        # Export each ReactionData object to a CSV file
+        for i, rd in enumerate(self.data):
+            filename = f"channel_{i+1}.csv"
+            filepath = os.path.join(temp_dir, filename)
+            rd.export_csv(filepath)
+
+        # Create output directory if it doesn't exist
+        output_dir = "/var/tmp/incubator/processedcsvs"
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Create a zip archive
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_name = f"reaction_data_{timestamp}.zip"
+        archive_path = os.path.join(output_dir, archive_name)
+
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(temp_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(
+                        file_path, temp_dir
+                    )  # relative name inside zip
+                    zipf.write(file_path, arcname)
+
+        # Clean up temporary directory
+        shutil.rmtree(temp_dir)
+
+        # Notify user
+        messagebox.showinfo("E-Stop", f"All data exported to:\n{archive_path}")
 
     def update_plot(self, frame=None):
-        if not hasattr(self, 'ax'):
+        if not hasattr(self, "ax"):
             return  # Axes not initialized yet
 
         self.ax.clear()  # Clear old plots
@@ -185,29 +256,39 @@ class RunView(tk.Frame):
         selected_indices = self.get_selected_indices()
         latest_time = None  # Keep track of latest time for scrolling
 
-        colors = ['r', 'g', 'b', 'y', 'c', 'm', 'k']  # Cycle through colors
+        colors = ["r", "g", "b", "y", "c", "m", "k"]  # Cycle through colors
         color_index = 0
 
         for idx in selected_indices:
             try:
                 df = self.data[int(idx) - 1].get_all()
-                if df.empty or 'time' not in df or 'optical_density' not in df:
+                if df.empty or "time" not in df or "optical_density" not in df:
                     continue
 
                 # Convert 'time' to datetime objects if needed
                 # If 'time' is a pandas datetime dtype already, this is no-op
-                if not pd.api.types.is_datetime64_any_dtype(df['time']):
-                    times = pd.to_datetime(df['time'])
+                if not pd.api.types.is_datetime64_any_dtype(df["time"]):
+                    times = pd.to_datetime(df["time"])
                 else:
-                    times = df['time']
+                    times = df["time"]
 
-                ods = df['optical_density']
+                ods = df["optical_density"]
 
-                self.ax.plot(times, ods, color=colors[color_index % len(colors)], linewidth=2, label=f"Channel {idx}")
+                self.ax.plot(
+                    times,
+                    ods,
+                    color=colors[color_index % len(colors)],
+                    linewidth=2,
+                    label=f"Channel {idx}",
+                )
                 color_index += 1
 
                 if not times.empty:
-                    latest_time = max(latest_time, times.iloc[-1]) if latest_time is not None else times.iloc[-1]
+                    latest_time = (
+                        max(latest_time, times.iloc[-1])
+                        if latest_time is not None
+                        else times.iloc[-1]
+                    )
 
             except (IndexError, ValueError, KeyError, AttributeError):
                 continue
