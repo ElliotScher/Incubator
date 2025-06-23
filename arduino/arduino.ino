@@ -282,7 +282,7 @@ void runReactionState() {
       break;
     case REACT_READ_ANALOG:
       currentOD = 0;
-      delay(5000);
+      delay(1000);
       for (int i = 0; i < 100; i++) {
         currentOD += analogRead(ODPin);
         delay(10);

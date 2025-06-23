@@ -194,7 +194,9 @@ class RunView(tk.Frame):
                             temperature=None,  # Assuming temperature is not provided in this line
                         )
 
-                        csv_path = f"/var/tmp/incubator/tmp_data/channel_{channel_index + 1}_data.csv"
+                        csv_dir = "/var/tmp/incubator/tmp_data"
+                        os.makedirs(csv_dir, exist_ok=True)
+                        csv_path = f"{csv_dir}/channel_{channel_index + 1}_data.csv"
                         self.data[channel_index].export_csv(csv_path)
                         print(
                             f"Exported CSV for channel {channel_index + 1} to {csv_path}"
