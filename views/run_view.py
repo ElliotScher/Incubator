@@ -322,8 +322,8 @@ class RunView(tk.Frame):
                 self.last_usb_path = mount_point
                 if not self._running:  # Only copy if NOT running
                     try:
-                        src_dir = "/var/tmp/incubator/tmp_data"
-                        dst_dir = os.path.join(mount_point, "reaction_backup")
+                        src_dir = "/var/tmp/incubator/processedcsvs"
+                        dst_dir = mount_point
                         os.makedirs(dst_dir, exist_ok=True)
 
                         for filename in os.listdir(src_dir):
@@ -339,12 +339,21 @@ class RunView(tk.Frame):
                             "Data was successfully copied to the USB drive.\nDo you want to delete all temporary data?"
                         )
                         if response:
-                            for filename in os.listdir(src_dir):
+                            for filename in os.listdir("/var/tmp/incubator/tmp_data"):
                                 file_path = os.path.join(src_dir, filename)
                                 os.remove(file_path)
                             print("🗑️ Temporary data deleted.")
                         else:
                             print("⚠️ Temporary data retained.")
+
+                        # After copying, move all files from processedcsvs to savedcsvs
+                        saved_dir = "/var/tmp/incubator/savedcsvs"
+                        os.makedirs(saved_dir, exist_ok=True)
+                        for filename in os.listdir(src_dir):
+                            src_path = os.path.join(src_dir, filename)
+                            dst_path = os.path.join(saved_dir, filename)
+                            shutil.move(src_path, dst_path)
+                        print(f"📁 Moved processed CSVs to: {saved_dir}")
                     except Exception as e:
                         print(f"❌ Error copying to USB: {e}")
 
