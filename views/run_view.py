@@ -159,7 +159,6 @@ class RunView(tk.Frame):
                     except ValueError:
                         pass  # Ignore malformed numbers
             # Schedule next poll
-            self.update_plot()
             self.after(100, poll_uart)  # Poll every 100 ms
 
         poll_uart()
@@ -168,16 +167,20 @@ class RunView(tk.Frame):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
 
-    def update_plot(self, frame=None):
-        if not hasattr(self, 'plot_widget') or not hasattr(self, 'curve'):
-            return  # Plot not initialized yet
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+    import pandas as pd
 
-        self.plot_widget.clear()  # Clear old plots
+    def update_plot(self, frame=None):
+        if not hasattr(self, 'ax'):
+            return  # Axes not initialized yet
+
+        self.ax.clear()  # Clear old plots
 
         selected_indices = self.get_selected_indices()
         latest_time = None  # Keep track of latest time for scrolling
 
-        colors = ['r', 'g', 'b', 'y', 'c', 'm', 'w']  # Cycle through colors
+        colors = ['r', 'g', 'b', 'y', 'c', 'm', 'k']  # Cycle through colors
         color_index = 0
 
         for idx in selected_indices:
@@ -186,12 +189,16 @@ class RunView(tk.Frame):
                 if df.empty or 'time' not in df or 'optical_density' not in df:
                     continue
 
-                # Convert time to milliseconds since epoch for plotting
-                times = df['time'].astype('int64')
+                # Convert 'time' to datetime objects if needed
+                # If 'time' is a pandas datetime dtype already, this is no-op
+                if not pd.api.types.is_datetime64_any_dtype(df['time']):
+                    times = pd.to_datetime(df['time'])
+                else:
+                    times = df['time']
+
                 ods = df['optical_density']
 
-                pen = pg.mkPen(color=colors[color_index % len(colors)], width=2)
-                self.plot_widget.plot(times, ods, pen=pen, name=f"Channel {idx}")
+                self.ax.plot(times, ods, color=colors[color_index % len(colors)], linewidth=2, label=f"Channel {idx}")
                 color_index += 1
 
                 if not times.empty:
@@ -202,4 +209,8 @@ class RunView(tk.Frame):
 
         # Optional: auto-scroll to the latest time (last 60 seconds visible)
         if latest_time is not None:
-            self.plot_widget.setXRange(latest_time - 60000, latest_time)
+            start_time = latest_time - pd.Timedelta(seconds=60)
+            self.ax.set_xlim(start_time, latest_time)
+
+        self.ax.legend()
+        self.fig.canvas.draw_idle()  # Refresh the plot
