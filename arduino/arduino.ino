@@ -10,7 +10,7 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 100, 50, 625, 10);
+StepperHomer homer(stepper, homingPin, 25, 54, 625, 1);
 ChannelStepper channelStepper(stepper, 50, 48, 1600, 6.25);
 
 
@@ -61,57 +61,26 @@ void setup() {
   Serial1.begin(9600);
   stepper.setMaxSpeed(3000);
   stepper.setAcceleration(3000);
-  stepper.setMinPulseWidth(20);
 }
 
 void loop() {
-  static bool moving = false;
+  switch (currentState) {
+    case IDLE:
+      runIdleState();
+      break;
 
-  if (!moving) {
-    // Read 100 analog values and compute the average
-    long sum = 0;
-    for (int i = 0; i < 100; i++) {
-      sum += analogRead(ODPin);
-      delay(1);  // Optional: gives ADC time to settle and reduces CPU usage
-    }
-    int average = sum / 100;
+    case TEST_CONNECTION:
+      runTestConnectionState();
+      break;
 
-    // Print the average
-    Serial.print(average);
-    Serial.println(",");
+    case CALIBRATE:
+      runCalibrationState();
+      break;
 
-    // Begin motor movement
-    stepper.move(1);
-    moving = true;
+    case RUN_REACTION:
+      runReactionState();
+      break;
   }
-
-  // Run the stepper motor
-  stepper.run();
-
-  // When movement finishes, reset the flag and optionally wait
-  if (moving && stepper.distanceToGo() == 0) {
-    moving = false;
-    delay(1000);  // Optional pause between cycles
-  }
-
-  delay(1);  // Prevent tight-loop CPU overload
-//  switch (currentState) {
-//    case IDLE:
-//      runIdleState();
-//      break;
-//
-//    case TEST_CONNECTION:
-//      runTestConnectionState();
-//      break;
-//
-//    case CALIBRATE:
-//      runCalibrationState();
-//      break;
-//
-//    case RUN_REACTION:
-//      runReactionState();
-//      break;
-//  }
 }
 
 void checkSuperStateSerial() {
@@ -188,8 +157,8 @@ void runCalibrationState() {
   switch (calibrationState) {
     case CAL_NONE:
       channelIterator = 1;
-      homer.reset();
-      channelStepper.setCurrentChannel(48);
+//      homer.reset();
+//      channelStepper.setCurrentChannel(48);
       calibrationState = CAL_RECEIVE_CHANNELS;
       break;
       

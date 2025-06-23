@@ -10,6 +10,7 @@ matplotlib.use('TkAgg')
 import re
 from collections import defaultdict
 from util.reaction.reaction_data import ReactionData
+import time
 
 class RunView(tk.Frame):
     def __init__(self, parent, controller):
@@ -66,6 +67,25 @@ class RunView(tk.Frame):
 
         right_frame = tk.Frame(self)
         right_frame.pack(side="left", fill="both", expand=True)
+
+        from matplotlib.animation import FuncAnimation
+
+        # Plotting Frame
+        plot_frame = tk.Frame(right_frame)
+        plot_frame.pack(fill='both', expand=True)
+
+        self.fig, self.ax = plt.subplots()
+        self.canvas = FigureCanvasTkAgg(self.fig, master=plot_frame)
+        self.canvas.get_tk_widget().pack(fill='both', expand=True)
+        self.line, = self.ax.plot([], [], lw=2)
+        self.ax.set_title("Optical Density vs Time")
+        self.ax.set_xlabel("Time (s)")
+        self.ax.set_ylabel("OD")
+        self.start_time = time.time()
+        self.animation = FuncAnimation(self.fig, self.update_plot, interval=500)
+
+        self.lines = {}  # Dictionary to store Line2D objects keyed by index
+
 
         # Input for agitation count
         agitation_frame = tk.Frame(button_frame)
@@ -139,6 +159,7 @@ class RunView(tk.Frame):
                     except ValueError:
                         pass  # Ignore malformed numbers
             # Schedule next poll
+            self.update_plot(None)
             self.after(100, poll_uart)  # Poll every 100 ms
 
         poll_uart()
@@ -146,3 +167,44 @@ class RunView(tk.Frame):
     def cancel_reaction(self):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
+
+    def update_plot(self, frame):
+        selected_indices = self.get_selected_indices()
+
+        # Remove unselected lines
+        for idx in list(self.lines):
+            if idx not in selected_indices:
+                self.lines[idx].remove()
+                del self.lines[idx]
+
+        # Update or create lines for selected indices
+        max_x, min_y, max_y = 0, float('inf'), float('-inf')
+
+        for idx in selected_indices:
+            data_idx = int(idx) - 1
+            entries = self.data[data_idx].entries
+            if not entries:
+                continue
+
+            x = [(entry["time"].astype('datetime64[ms]').astype(float) / 1000.0) - self.start_time for entry in entries]
+            y = [entry["optical_density"] for entry in entries]
+
+            if idx not in self.lines:
+                line, = self.ax.plot(x, y, label=f"Idx {idx}")
+                self.lines[idx] = line
+            else:
+                self.lines[idx].set_data(x, y)
+
+            max_x = max(max_x, max(x))
+            min_y = min(min_y, min(y))
+            max_y = max(max_y, max(y))
+
+        # Update axis limits
+        if max_x > 0:
+            self.ax.set_xlim(max(0, max_x - 20), max_x)  # Show last 20s
+        if min_y < max_y:
+            margin = 0.1 * (max_y - min_y)
+            self.ax.set_ylim(min_y - margin, max_y + margin)
+
+        self.ax.legend(loc='upper left')
+        self.canvas.draw()
