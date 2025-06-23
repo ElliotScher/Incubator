@@ -312,7 +312,7 @@ class RunView(tk.Frame):
         self.fig.canvas.draw_idle()  # Refresh the plot
 
     def check_usb_and_copy(self):
-        usb_mount_base = "/media/pi"  # or "/run/media/username" on some systems
+        usb_mount_base = "/media/incubator"  # or "/run/media/username" on some systems
         mounted = [os.path.join(usb_mount_base, d) for d in os.listdir(usb_mount_base)]
         mounted = [d for d in mounted if os.path.ismount(d)]
 
