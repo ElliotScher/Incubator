@@ -187,7 +187,7 @@ class RunView(tk.Frame):
                     continue
 
                 # Convert time to milliseconds since epoch for plotting
-                times = df['time'].astype('int64') / 1e6  # Convert nanoseconds to milliseconds
+                times = df['time'].astype('int64')
                 ods = df['optical_density']
 
                 pen = pg.mkPen(color=colors[color_index % len(colors)], width=2)
