@@ -142,6 +142,10 @@ class RunView(tk.Frame):
         )
         estop_button.pack(side="right", padx=10)
 
+        self.last_usb_path = None
+        self.after(3000, self.check_usb_and_copy)
+
+
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
         if region != "cell":
@@ -306,3 +310,41 @@ class RunView(tk.Frame):
 
         self.ax.legend()
         self.fig.canvas.draw_idle()  # Refresh the plot
+
+    def check_usb_and_copy(self):
+        usb_mount_base = "/media/pi"  # or "/run/media/username" on some systems
+        mounted = [os.path.join(usb_mount_base, d) for d in os.listdir(usb_mount_base)]
+        mounted = [d for d in mounted if os.path.ismount(d)]
+
+        for mount_point in mounted:
+            if mount_point != self.last_usb_path:
+                self.last_usb_path = mount_point
+                if not getattr(self, "_running", False):  # Only copy if NOT running
+                    try:
+                        src_dir = "/var/tmp/incubator/tmp_data"
+                        dst_dir = os.path.join(mount_point, "reaction_backup")
+                        os.makedirs(dst_dir, exist_ok=True)
+
+                        for filename in os.listdir(src_dir):
+                            src_path = os.path.join(src_dir, filename)
+                            dst_path = os.path.join(dst_dir, filename)
+                            shutil.copy2(src_path, dst_path)
+
+                        print(f"✅ Data copied to USB: {dst_dir}")
+
+                        # Show popup asking to delete temp data
+                        response = messagebox.askyesno(
+                            "Data Copied",
+                            "Data was successfully copied to the USB drive.\nDo you want to delete all temporary data?"
+                        )
+                        if response:
+                            for filename in os.listdir(src_dir):
+                                file_path = os.path.join(src_dir, filename)
+                                os.remove(file_path)
+                            print("🗑️ Temporary data deleted.")
+                        else:
+                            print("⚠️ Temporary data retained.")
+                    except Exception as e:
+                        print(f"❌ Error copying to USB: {e}")
+
+        self.after(3000, self.check_usb_and_copy)
