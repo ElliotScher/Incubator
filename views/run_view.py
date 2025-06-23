@@ -168,43 +168,38 @@ class RunView(tk.Frame):
         self._running = False  # Stop polling
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
 
-    def update_plot(self, frame):
-        selected_indices = self.get_selected_indices()
+def update_plot(self):
+    if not hasattr(self, 'plot_widget') or not hasattr(self, 'curve'):
+        return  # Plot not initialized yet
 
-        # Remove unselected lines
-        for idx in list(self.lines):
-            if idx not in selected_indices:
-                self.lines[idx].remove()
-                del self.lines[idx]
+    self.plot_widget.clear()  # Clear old plots
 
-        # Update or create lines for selected indices
-        max_x, min_y, max_y = 0, float('inf'), float('-inf')
+    selected_indices = self.get_selected_indices()
+    latest_time = None  # Keep track of latest time for scrolling
 
-        for idx in selected_indices:
-            data_idx = int(idx) - 1
-            entries = self.data[data_idx].entries
-            if not entries:
+    colors = ['r', 'g', 'b', 'y', 'c', 'm', 'w']  # Cycle through colors
+    color_index = 0
+
+    for idx in selected_indices:
+        try:
+            df = self.data[int(idx) - 1].get_all()
+            if df.empty or 'time' not in df or 'optical_density' not in df:
                 continue
 
-            x = [(entry["time"].astype('datetime64[ms]').astype(float) / 1000.0) - self.start_time for entry in entries]
-            y = [entry["optical_density"] for entry in entries]
+            # Convert time to milliseconds since epoch for plotting
+            times = df['time'].astype('int64') / 1e6  # Convert nanoseconds to milliseconds
+            ods = df['optical_density']
 
-            if idx not in self.lines:
-                line, = self.ax.plot(x, y, label=f"Idx {idx}")
-                self.lines[idx] = line
-            else:
-                self.lines[idx].set_data(x, y)
+            pen = pg.mkPen(color=colors[color_index % len(colors)], width=2)
+            self.plot_widget.plot(times, ods, pen=pen, name=f"Channel {idx}")
+            color_index += 1
 
-            max_x = max(max_x, max(x))
-            min_y = min(min_y, min(y))
-            max_y = max(max_y, max(y))
+            if not times.empty:
+                latest_time = max(latest_time, times.iloc[-1]) if latest_time is not None else times.iloc[-1]
 
-        # Update axis limits
-        if max_x > 0:
-            self.ax.set_xlim(max(0, max_x - 20), max_x)  # Show last 20s
-        if min_y < max_y:
-            margin = 0.1 * (max_y - min_y)
-            self.ax.set_ylim(min_y - margin, max_y + margin)
+        except (IndexError, ValueError, KeyError, AttributeError):
+            continue
 
-        self.ax.legend(loc='upper left')
-        self.canvas.draw()
+    # Optional: auto-scroll to the latest time (last 60 seconds visible)
+    if latest_time is not None:
+        self.plot_widget.setXRange(latest_time - 60000, latest_time)
