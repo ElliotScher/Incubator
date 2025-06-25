@@ -6,12 +6,12 @@
 #define dirPin 2
 #define stepPin 3
 #define homingPin 28
-#define ODPin A0
+#define ODPin A1
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 25, 54, 625, 1);
-ChannelStepper channelStepper(stepper, 50, 48, 1600, 6.25);
+StepperHomer homer(stepper, homingPin, 25, 125, 1250, 100);
+ChannelStepper channelStepper(stepper, 50, 48, 800, 31.25);
 
 
 // Calibration Variables
@@ -157,8 +157,8 @@ void runCalibrationState() {
   switch (calibrationState) {
     case CAL_NONE:
       channelIterator = 1;
-//      homer.reset();
-//      channelStepper.setCurrentChannel(48);
+      homer.reset();
+      channelStepper.setCurrentChannel(48);
       calibrationState = CAL_RECEIVE_CHANNELS;
       break;
       
