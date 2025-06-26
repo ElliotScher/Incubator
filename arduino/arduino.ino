@@ -104,6 +104,7 @@ void checkSuperStateSerial() {
         currentState = IDLE;
       } else if (superStateInputBuffer == "CMD:PLAY_REACTION") {
         currentState = RUN_REACTION;
+        Serial1.println("RESUME SUCCESSFUL");
         paused = false;
       } else {
         Serial1.println("ERR:UNKNOWN_COMMAND");
@@ -264,11 +265,6 @@ void runReactionState() {
   checkReactionStateSerial();
   if (paused) {
     return;
-  }
-
-  if (!paused && previousPaused) {
-    Serial1.println("RESUME SUCCESSFUL");
-    delay(1000);
   }
   
   switch (reactionState) {
