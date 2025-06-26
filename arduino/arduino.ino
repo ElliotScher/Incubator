@@ -22,6 +22,8 @@ int channelIterator = 0;
 unsigned long currentOD = 0;
 int targetAgitations = 0;
 int currentAgitations = 0;
+bool paused = false;
+bool previousPaused = false;
 
 enum SuperState {
   IDLE,
@@ -78,6 +80,7 @@ void loop() {
       break;
 
     case RUN_REACTION:
+      
       runReactionState();
       break;
   }
@@ -100,6 +103,9 @@ void checkSuperStateSerial() {
         currentState = RUN_REACTION;
       } else if (superStateInputBuffer == "CMD:IDLE") {
         currentState = IDLE;
+      } else if (superStateInputBuffer == "CMD:PLAY_REACTION") {
+        currentState = RUN_REACTION;
+        paused = false;
       } else {
         Serial1.println("ERR:UNKNOWN_COMMAND");
       }
@@ -113,6 +119,13 @@ void checkSuperStateSerial() {
 
 void runIdleState() {
   checkSuperStateSerial();
+  if (paused && !previousPaused) {
+    Serial1.println("PAUSE SUCCESSFUL");
+  }
+
+  Serial.println(paused);
+
+  previousPaused = paused;
 }
 
 void runTestConnectionState() {
@@ -140,8 +153,6 @@ void checkCalibrationStateSerial() {
       } else if (calibrationStateInputBuffer.startsWith("CHANNELS:")) {
         String numberStr = calibrationStateInputBuffer.substring(9);  // After "CHANNELS:"
         channels = numberStr.toInt();  // Convert to integer
-//        Serial.print("Parsed channels: ");
-//        Serial.println(channels);
       }
 
       calibrationStateInputBuffer = "";  // Clear buffer for next message
@@ -196,7 +207,6 @@ void runCalibrationState() {
         delay(10);
       }
       currentOD /= 100;
-//      Serial.println(currentOD);
       calibrationState = CAL_TRANSMIT_DATA;
       break;
 
@@ -233,6 +243,9 @@ void checkReactionStateSerial() {
         stepper.stop();
         reactionState = REACT_NONE;
         currentState = IDLE;
+      } else if (reactionStateInputBuffer == "CMD:PAUSE_REACTION") {
+        currentState = IDLE;
+        paused = true;
       } else if (reactionStateInputBuffer.startsWith("AGITATIONS:")) {
         String numberStr = reactionStateInputBuffer.substring(11);  // After "AGITATIONS:"
         targetAgitations = numberStr.toInt();  // Convert to integer
@@ -249,6 +262,14 @@ void checkReactionStateSerial() {
 
 void runReactionState() {
   checkReactionStateSerial();
+  if (paused) {
+    return;
+  }
+
+  if (!paused && previousPaused) {
+    Serial1.println("RESUME SUCCESSFUL");
+    delay(1000);
+  }
   
   switch (reactionState) {
     case REACT_NONE:
@@ -288,7 +309,6 @@ void runReactionState() {
         delay(10);
       }
       currentOD /= 100;
-//      Serial.println(currentOD);
       reactionState = REACT_TRANSMIT_DATA;
       break;
     case REACT_TRANSMIT_DATA:

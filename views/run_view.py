@@ -36,6 +36,7 @@ class RunView(tk.Frame):
 
         self._running = False  # Flag to control the reaction state
         self._paused = False # Flag to control the pause state
+        self.arduino_paused_ack = False # Flag for hardware pause confirmation
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side="top", anchor="n", pady=10)
@@ -154,6 +155,7 @@ class RunView(tk.Frame):
             # Start the reaction
             self._running = True
             self._paused = False # Ensure reaction starts in an un-paused state
+            self.arduino_paused_ack = False # Reset ack flag
             self.run_stop_button.config(text="Stop", bg="red")
             self.play_pause_button.config(state="normal", text="Pause") # Enable pause button
             self._start_sequence()
@@ -166,16 +168,22 @@ class RunView(tk.Frame):
             self._stop_sequence()
 
     def toggle_pause(self):
-        """Toggles the pause state of a running reaction."""
+        """Sends a pause or resume command to the Arduino."""
         if not self._running: # Safeguard: button should be disabled if not running
             return
         
         self._paused = not self._paused
 
         if self._paused:
-            self.play_pause_button.config(text="Play")
+            # We want to pause. Send command to Arduino.
+            # The button text will change to "Play" only upon receiving "PAUSE SUCCESSFUL"
+            UARTUtil.send_data(self.ser, "CMD:PAUSE")
+            print("Sent PAUSE command to Arduino.")
         else:
-            self.play_pause_button.config(text="Pause")
+            # We want to resume. Send command to Arduino.
+            # The button text will change to "Pause" only upon receiving "RESUME SUCCESSFUL"
+            UARTUtil.send_data(self.ser, "CMD:RESUME")
+            print("Sent RESUME command to Arduino.")
 
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
@@ -201,7 +209,6 @@ class RunView(tk.Frame):
 
     def _start_sequence(self):
         """Handles the logic for starting the reaction sequence."""
-        # Clear all ReactionData objects' dataframes
         for rd in self.data:
             rd.clear()
         self.data_iterator = 0
@@ -210,49 +217,47 @@ class RunView(tk.Frame):
 
         def poll_uart():
             if not self._running:
-                # This part of the logic might be simplified or removed if stopping
-                # is handled exclusively by _stop_sequence, but left for safety.
-                messagebox.showinfo(
-                    "Info", "Reaction stopped."
-                )
-                return
-
-            # If paused, skip data processing but keep the poll loop alive
-            if self._paused:
-                self.after(100, poll_uart)
                 return
 
             line = UARTUtil.receive_data(self.ser)
             if line:
-                if "OD:" in line:
+                if "PAUSE SUCCESSFUL" in line:
+                    self.arduino_paused_ack = True
+                    self.play_pause_button.config(text="Play")
+                    print("Arduino confirmed PAUSE.")
+                elif "RESUME SUCCESSFUL" in line:
+                    self.arduino_paused_ack = False
+                    self.play_pause_button.config(text="Pause")
+                    print("Arduino confirmed RESUME.")
+                elif "OD:" in line:
+                    # If paused, we still receive data but don't process it
+                    if self.arduino_paused_ack:
+                        self.after(100, poll_uart)
+                        return
+                    
                     print("Processing Channel ", self.data_iterator + 1)
                     print("Received line:", line, "\n")
                     try:
-                        number_str = line[3:]  # Everything after "OD:"
+                        number_str = line[3:]
                         number = float(number_str)
-                        channel_index = self.data_iterator  # Capture current index
+                        channel_index = self.data_iterator
                         self.data[self.data_iterator].add_entry(
                             time=np.datetime64("now", "ms"),
                             optical_density=number,
-                            temperature=None,  # Assuming temperature is not provided in this line
+                            temperature=None,
                         )
 
                         csv_dir = "/var/tmp/incubator/tmp_data"
                         os.makedirs(csv_dir, exist_ok=True)
                         csv_path = f"{csv_dir}/channel_{channel_index + 1}_data.csv"
                         self.data[channel_index].export_csv(csv_path)
-                        print(
-                            f"Exported CSV for channel {channel_index + 1} to {csv_path}"
-                        )
-
+                        
                         self.data_iterator = (self.data_iterator + 1) % len(self.data)
                         if self.data_iterator >= 50:
-                            # Reset iterator if it reaches the end
                             self.data_iterator = 0
                     except ValueError:
-                        pass  # Ignore malformed numbers
+                        pass
             
-            # Schedule next poll regardless of receiving data to keep the loop active
             self.after(100, poll_uart)
 
         poll_uart()
@@ -260,21 +265,17 @@ class RunView(tk.Frame):
     def _stop_sequence(self):
         """Handles the logic for stopping the reaction and exporting data."""
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
-        # Create temporary directory
         temp_dir = tempfile.mkdtemp(prefix="reaction_data_")
 
-        # Export each ReactionData object to a CSV file
         for i, rd in enumerate(self.data):
-            if not rd.get_all().empty: # Only save if data exists
+            if not rd.get_all().empty:
                 filename = f"channel_{i+1}.csv"
                 filepath = os.path.join(temp_dir, filename)
                 rd.export_csv(filepath)
 
-        # Create output directory if it doesn't exist
         output_dir = "/var/tmp/incubator/processedcsvs"
         os.makedirs(output_dir, exist_ok=True)
 
-        # Create a zip archive
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         archive_name = f"reaction_data_{timestamp}.zip"
         archive_path = os.path.join(output_dir, archive_name)
@@ -283,28 +284,22 @@ class RunView(tk.Frame):
             for root, _, files in os.walk(temp_dir):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(
-                        file_path, temp_dir
-                    )  # relative name inside zip
+                    arcname = os.path.relpath(file_path, temp_dir)
                     zipf.write(file_path, arcname)
-
-        # Clean up temporary directory
+        
         shutil.rmtree(temp_dir)
-
-        # Notify user
         messagebox.showinfo("Stopped", f"All data exported to:\n{archive_path}")
 
     def update_plot(self, frame=None):
-        # If axes don't exist or if the reaction is paused, do not update the plot
-        if not hasattr(self, "ax") or self._paused:
+        if not hasattr(self, "ax") or self.arduino_paused_ack:
             return
 
-        self.ax.clear()  # Clear old plots
+        self.ax.clear()
 
         selected_indices = self.get_selected_indices()
-        latest_time = None  # Keep track of latest time for scrolling
+        latest_time = None
 
-        colors = plt.cm.get_cmap('tab10').colors # Use a colormap for more colors
+        colors = plt.cm.get_cmap('tab10').colors
         color_index = 0
 
         for idx_str in selected_indices:
@@ -314,7 +309,6 @@ class RunView(tk.Frame):
                 if df.empty or "time" not in df or "optical_density" not in df:
                     continue
 
-                # Convert 'time' to datetime objects if needed
                 if not pd.api.types.is_datetime64_any_dtype(df["time"]):
                     times = pd.to_datetime(df["time"])
                 else:
@@ -341,9 +335,7 @@ class RunView(tk.Frame):
             except (IndexError, ValueError, KeyError, AttributeError):
                 continue
 
-        # Auto-scroll to the latest time (last 30 minutes visible)
         if latest_time is not None:
-            # Ensure latest_time is a Timestamp for arithmetic
             latest_time_ts = pd.to_datetime(latest_time)
             start_time = latest_time_ts - pd.Timedelta(minutes=30)
             self.ax.set_xlim(start_time, latest_time_ts)
@@ -353,8 +345,8 @@ class RunView(tk.Frame):
         self.ax.set_ylabel("OD")
         self.ax.legend()
         self.ax.grid(True)
-        self.fig.autofmt_xdate() # Improve date formatting
-        self.fig.canvas.draw_idle()  # Refresh the plot
+        self.fig.autofmt_xdate()
+        self.fig.canvas.draw_idle()
 
     def check_usb_and_copy(self):
         usb_mount_base = "/media/incubator"
@@ -366,11 +358,11 @@ class RunView(tk.Frame):
                 for mount_point in mounted:
                     if mount_point != self.last_usb_path:
                         self.last_usb_path = mount_point
-                        if not self._running:  # Only copy if NOT running
+                        if not self._running:
                             try:
                                 src_dir = "/var/tmp/incubator/processedcsvs"
                                 if not os.path.exists(src_dir) or not os.listdir(src_dir):
-                                    continue # Nothing to copy
+                                    continue
 
                                 dst_dir = os.path.join(mount_point, "Incubator_Data")
                                 os.makedirs(dst_dir, exist_ok=True)
@@ -387,10 +379,8 @@ class RunView(tk.Frame):
                                     "Data was successfully copied to the USB drive.\nDo you want to delete the temporary and processed data?"
                                 )
                                 if response:
-                                    # Clean up processed data
                                     shutil.rmtree(src_dir)
                                     os.makedirs(src_dir, exist_ok=True)
-                                    # Clean up temp data
                                     temp_data_dir = "/var/tmp/incubator/tmp_data"
                                     if os.path.exists(temp_data_dir):
                                         shutil.rmtree(temp_data_dir)
@@ -398,8 +388,6 @@ class RunView(tk.Frame):
                                     print("🗑️ Temporary and processed data deleted.")
                                 else:
                                     print("⚠️ Temporary data retained.")
-
-                                    # Move processed CSVs to a saved directory anyway
                                     saved_dir = "/var/tmp/incubator/savedcsvs"
                                     os.makedirs(saved_dir, exist_ok=True)
                                     for filename in os.listdir(src_dir):
@@ -410,7 +398,6 @@ class RunView(tk.Frame):
 
                             except Exception as e:
                                 messagebox.showerror("USB Copy Error", f"Failed to copy data to USB: {e}")
-                                print(f"❌ Error copying to USB: {e}")
             else:
                  self.last_usb_path = None
         except Exception as e:
