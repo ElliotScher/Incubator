@@ -28,15 +28,12 @@ class RunView(tk.Frame):
         self.canvas = None
         self.ser = UARTUtil.open_port()
 
-        # Initialize self.data with 50 ReactionData objects
-        self.data = []
-        for i in range(50):
-            self.data.append(ReactionData(i))
+        self.data = [ReactionData(i) for i in range(50)]
         self.data_iterator = 0
 
-        self._running = False  # Flag to control the reaction state
-        self._paused = False # Flag to control the pause state
-        self.arduino_paused_ack = False # Flag for hardware pause confirmation
+        self._running = False
+        self._paused = False
+        self.arduino_paused_ack = False
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side="top", anchor="n", pady=10)
@@ -57,7 +54,6 @@ class RunView(tk.Frame):
         )
         info_label.pack(pady=(0, 10))
 
-        # Treeview for calibration data
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill="both", expand=True)
 
@@ -96,14 +92,7 @@ class RunView(tk.Frame):
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=plot_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
-        (self.line,) = self.ax.plot([], [], lw=2)
-        self.ax.set_title("Optical Density vs Time")
-        self.ax.set_xlabel("Time (s)")
-        self.ax.set_ylabel("OD")
-        self.start_time = time.time()
         self.animation = FuncAnimation(self.fig, self.update_plot, interval=500)
-
-        self.lines = {}
 
         agitation_frame = tk.Frame(button_frame)
         agitation_frame.pack(side="left", padx=10)
@@ -138,52 +127,106 @@ class RunView(tk.Frame):
         )
         self.play_pause_button.pack(side="left", padx=5)
 
-        # New button for manual USB export
-        self.export_button = tk.Button(
+        self.action_button = tk.Button(
             button_frame,
-            text="Export to USB",
+            text="Export Final Data",
             font=("Arial", 12, "bold"),
-            width=14,
+            width=16,
             height=2,
-            command=self.export_data_to_usb
+            command=self.export_final_data
         )
-        self.export_button.pack(side="left", padx=10)
+        self.action_button.pack(side="left", padx=10)
 
 
     def toggle_reaction(self):
-        """Toggles the reaction state between running and stopped."""
         if not self._running:
             self._running = True
             self._paused = False
             self.arduino_paused_ack = False
             self.run_stop_button.config(text="Stop", bg="red")
             self.play_pause_button.config(state="normal", text="Pause")
-            self.export_button.config(state="disabled") # Disable export while running
+            self.action_button.config(text="Export Partial Data", command=self.start_partial_export)
             self._start_sequence()
         else:
             self._running = False
             self._paused = False
             self.run_stop_button.config(text="Run", bg="green")
             self.play_pause_button.config(state="disabled", text="Pause")
-            self.export_button.config(state="normal") # Enable export when stopped
+            self.action_button.config(text="Export Final Data", command=self.export_final_data)
             self._stop_sequence()
 
     def toggle_pause(self):
-        """Sends a pause or resume command to the Arduino."""
-        if not self._running:
-            return
-        
+        if not self._running: return
         self._paused = not self._paused
+        if self._paused: UARTUtil.send_data(self.ser, "CMD:PAUSE")
+        else: UARTUtil.send_data(self.ser, "CMD:RESUME")
 
-        if self._paused:
-            UARTUtil.send_data(self.ser, "CMD:PAUSE")
-            print("Sent PAUSE command to Arduino.")
-        else:
+    def start_partial_export(self):
+        self.action_button.config(state="disabled")
+        self.play_pause_button.config(state="disabled")
+        messagebox.showinfo("Exporting", "Pausing reaction to export partial data. The process will resume automatically.")
+        UARTUtil.send_data(self.ser, "CMD:PAUSE")
+        print("Sent PAUSE command for partial export.")
+        self._poll_partial_export_status("waiting_for_pause")
+
+    def _poll_partial_export_status(self, current_state):
+        if current_state == "waiting_for_pause":
+            if self.arduino_paused_ack:
+                print("Pause acknowledged. Starting file operations.")
+                self._do_partial_export_files()
+                self._poll_partial_export_status("resuming_reaction")
+            else:
+                self.after(200, self._poll_partial_export_status, "waiting_for_pause")
+        elif current_state == "resuming_reaction":
             UARTUtil.send_data(self.ser, "CMD:RESUME")
-            print("Sent RESUME command to Arduino.")
+            print("Sent RESUME command after partial export.")
+            self._poll_partial_export_status("waiting_for_resume")
+        elif current_state == "waiting_for_resume":
+            if not self.arduino_paused_ack:
+                print("Resume acknowledged. Partial export complete.")
+                self.action_button.config(state="normal")
+                self.play_pause_button.config(state="normal")
+                messagebox.showinfo("Export Complete", "Partial data exported. Reaction has resumed.")
+            else:
+                self.after(200, self._poll_partial_export_status, "waiting_for_resume")
 
-    def export_data_to_usb(self):
-        """Finds a USB drive and copies processed data to it upon button click."""
+    def _do_partial_export_files(self):
+        try:
+            src_dir = "/var/tmp/incubator/tmp_data"
+            if not os.path.exists(src_dir) or not os.listdir(src_dir):
+                messagebox.showwarning("No Data", "No temporary data found to export.")
+                return
+
+            usb_mount_base = "/media/incubator"
+            mounted_drives = [os.path.join(usb_mount_base, d) for d in os.listdir(usb_mount_base) if os.path.ismount(os.path.join(usb_mount_base, d))]
+            if not mounted_drives:
+                messagebox.showerror("USB Not Found", "No USB drive detected. Export failed.")
+                return
+
+            mount_point = mounted_drives[0]
+            dst_dir = os.path.join(mount_point, "Incubator_Data")
+            os.makedirs(dst_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            archive_name = f"reaction_data_PARTIAL_{timestamp}.zip"
+            local_archive_path = os.path.join(tempfile.gettempdir(), archive_name)
+
+            with zipfile.ZipFile(local_archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for root, _, files in os.walk(src_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, src_dir)
+                        zipf.write(file_path, arcname)
+
+            shutil.copy2(local_archive_path, dst_dir)
+            print(f"Copied partial data to {os.path.join(dst_dir, archive_name)}")
+            os.remove(local_archive_path)
+            print(f"Deleted local temporary zip file: {local_archive_path}")
+
+        except Exception as e:
+            messagebox.showerror("Export Error", f"An error occurred during partial export: {e}")
+
+    def export_final_data(self):
         src_dir = "/var/tmp/incubator/processedcsvs"
         if not os.path.exists(src_dir) or not os.listdir(src_dir):
             messagebox.showinfo("No Data", "There is no processed data available to export.")
@@ -202,193 +245,98 @@ class RunView(tk.Frame):
             messagebox.showerror("USB Not Found", "No USB drive detected. Please insert a USB drive and try again.")
             return
 
-        mount_point = mounted_drives[0] # Use the first detected drive
-
+        mount_point = mounted_drives[0]
         try:
             dst_dir = os.path.join(mount_point, "Incubator_Data")
             os.makedirs(dst_dir, exist_ok=True)
-
             for filename in os.listdir(src_dir):
-                src_path = os.path.join(src_dir, filename)
-                dst_path = os.path.join(dst_dir, filename)
-                shutil.copy2(src_path, dst_path)
+                shutil.copy2(os.path.join(src_dir, filename), dst_dir)
 
             response = messagebox.askyesno(
-                "Export Successful",
-                f"Data was successfully copied to {dst_dir}.\n\nDo you want to delete the exported data from this device?"
+                "Export Successful", f"Data copied to {dst_dir}.\n\nDelete exported data from device?"
             )
             if response:
                 shutil.rmtree(src_dir)
                 os.makedirs(src_dir, exist_ok=True)
-                temp_data_dir = "/var/tmp/incubator/tmp_data"
-                if os.path.exists(temp_data_dir):
-                    shutil.rmtree(temp_data_dir)
-                    os.makedirs(temp_data_dir, exist_ok=True)
-                messagebox.showinfo("Data Deleted", "The exported data has been deleted from the device.")
-            else:
-                saved_dir = "/var/tmp/incubator/savedcsvs"
-                os.makedirs(saved_dir, exist_ok=True)
-                for filename in os.listdir(src_dir):
-                    shutil.move(os.path.join(src_dir, filename), os.path.join(saved_dir, filename))
-                messagebox.showinfo("Data Archived", "The data has been kept and moved to an archive folder on the device.")
-
+                messagebox.showinfo("Data Deleted", "Exported data has been deleted from the device.")
         except Exception as e:
             messagebox.showerror("Export Error", f"An error occurred during the export process: {e}")
 
-
     def on_click(self, event):
-        region = self.tree.identify("region", event.x, event.y)
-        if region != "cell":
-            return
-
+        if self.tree.identify("region", event.x, event.y) != "cell": return
         row_id = self.tree.identify_row(event.y)
-        column = self.tree.identify_column(event.x)
-
-        if column != "#1":
-            return
-
+        if self.tree.identify_column(event.x) != "#1": return
         current = self.tree.set(row_id, "Selected")
-        new_val = "[x]" if current.strip() == "[ ]" else "[ ]"
-        self.tree.set(row_id, "Selected", new_val)
+        self.tree.set(row_id, "Selected", "[x]" if current.strip() == "[ ]" else "[ ]")
 
     def get_selected_indices(self):
-        selected = []
-        for item in self.tree.get_children():
-            if self.tree.set(item, "Selected") == "[x]":
-                selected.append(self.tree.set(item, "Index"))
-        return selected
+        return [self.tree.set(item, "Index") for item in self.tree.get_children() if self.tree.set(item, "Selected") == "[x]"]
 
     def _start_sequence(self):
-        for rd in self.data:
-            rd.clear()
+        for rd in self.data: rd.clear()
         self.data_iterator = 0
         UARTUtil.send_data(self.ser, "AGITATIONS:" + str(self.agitation_var.get()))
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
+        self.poll_uart()
 
-        def poll_uart():
-            if not self._running:
-                return
-
-            line = UARTUtil.receive_data(self.ser)
-            if line:
-                if "PAUSE SUCCESSFUL" in line:
-                    self.arduino_paused_ack = True
-                    self.play_pause_button.config(text="Play")
-                    print("Arduino confirmed PAUSE.")
-                elif "RESUME SUCCESSFUL" in line:
-                    self.arduino_paused_ack = False
-                    self.play_pause_button.config(text="Pause")
-                    print("Arduino confirmed RESUME.")
-                elif "OD:" in line:
-                    if self.arduino_paused_ack:
-                        self.after(100, poll_uart)
-                        return
-                    
-                    try:
-                        number_str = line[3:]
-                        number = float(number_str)
-                        channel_index = self.data_iterator
-                        self.data[self.data_iterator].add_entry(
-                            time=np.datetime64("now", "ms"),
-                            optical_density=number,
-                            temperature=None,
-                        )
-
-                        csv_dir = "/var/tmp/incubator/tmp_data"
-                        os.makedirs(csv_dir, exist_ok=True)
-                        csv_path = f"{csv_dir}/channel_{channel_index + 1}_data.csv"
-                        self.data[channel_index].export_csv(csv_path)
-                        
-                        self.data_iterator = (self.data_iterator + 1) % len(self.data)
-                    except ValueError:
-                        pass
-            
-            self.after(100, poll_uart)
-
-        poll_uart()
+    def poll_uart(self):
+        if not self._running: return
+        line = UARTUtil.receive_data(self.ser)
+        if line:
+            if "PAUSE SUCCESSFUL" in line:
+                self.arduino_paused_ack = True
+                self.play_pause_button.config(text="Play")
+            elif "RESUME SUCCESSFUL" in line:
+                self.arduino_paused_ack = False
+                self.play_pause_button.config(text="Pause")
+            elif "OD:" in line and not self.arduino_paused_ack:
+                try:
+                    self.data[self.data_iterator].add_entry(
+                        time=np.datetime64("now", "ms"),
+                        optical_density=float(line[3:]),
+                        temperature=None
+                    )
+                    csv_dir = "/var/tmp/incubator/tmp_data"
+                    os.makedirs(csv_dir, exist_ok=True)
+                    self.data[self.data_iterator].export_csv(f"{csv_dir}/channel_{self.data_iterator + 1}_data.csv")
+                    self.data_iterator = (self.data_iterator + 1) % len(self.data)
+                except (ValueError, IndexError): pass
+        self.after(100, self.poll_uart)
 
     def _stop_sequence(self):
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
         temp_dir = tempfile.mkdtemp(prefix="reaction_data_")
-
         for i, rd in enumerate(self.data):
             if not rd.get_all().empty:
-                filename = f"channel_{i+1}.csv"
-                filepath = os.path.join(temp_dir, filename)
-                rd.export_csv(filepath)
-
+                rd.export_csv(os.path.join(temp_dir, f"channel_{i+1}.csv"))
         output_dir = "/var/tmp/incubator/processedcsvs"
         os.makedirs(output_dir, exist_ok=True)
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        archive_name = f"reaction_data_{timestamp}.zip"
-        archive_path = os.path.join(output_dir, archive_name)
-
-        if os.listdir(temp_dir): # Only create zip if there's data
+        archive_path = os.path.join(output_dir, f"reaction_data_{timestamp}.zip")
+        if os.listdir(temp_dir):
             with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, _, files in os.walk(temp_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, temp_dir)
-                        zipf.write(file_path, arcname)
-            messagebox.showinfo("Reaction Stopped", f"Reaction data has been processed and is ready for export.\nArchive created at: {archive_path}")
-
+                        zipf.write(file_path, os.path.relpath(file_path, temp_dir))
+            messagebox.showinfo("Reaction Stopped", f"Reaction data processed and ready for export.")
         shutil.rmtree(temp_dir)
-        
 
     def update_plot(self, frame=None):
-        if not hasattr(self, "ax") or self.arduino_paused_ack:
-            return
-
+        if not hasattr(self, "ax") or self.arduino_paused_ack: return
         self.ax.clear()
-
         selected_indices = self.get_selected_indices()
         latest_time = None
-
         colors = plt.cm.get_cmap('tab10').colors
-        color_index = 0
-
-        for idx_str in selected_indices:
+        for i, idx_str in enumerate(selected_indices):
             try:
-                idx = int(idx_str)
-                df = self.data[idx - 1].get_all()
-                if df.empty or "time" not in df or "optical_density" not in df:
-                    continue
-
-                if not pd.api.types.is_datetime64_any_dtype(df["time"]):
+                df = self.data[int(idx_str) - 1].get_all()
+                if not df.empty and "time" in df and "optical_density" in df:
                     times = pd.to_datetime(df["time"])
-                else:
-                    times = df["time"]
-
-                ods = df["optical_density"]
-
-                self.ax.plot(
-                    times,
-                    ods,
-                    color=colors[color_index % len(colors)],
-                    linewidth=2,
-                    label=f"Channel {idx}",
-                )
-                color_index += 1
-
-                if not times.empty:
-                    latest_time = (
-                        max(latest_time, times.iloc[-1])
-                        if latest_time is not None
-                        else times.iloc[-1]
-                    )
-            except (IndexError, ValueError, KeyError, AttributeError):
-                continue
-
-        if latest_time is not None:
-            latest_time_ts = pd.to_datetime(latest_time)
-            start_time = latest_time_ts - pd.Timedelta(minutes=30)
-            self.ax.set_xlim(start_time, latest_time_ts)
-        
+                    self.ax.plot(times, df["optical_density"], color=colors[i % len(colors)], linewidth=2, label=f"Channel {idx_str}")
+                    if not times.empty: latest_time = max(latest_time, times.iloc[-1]) if latest_time else times.iloc[-1]
+            except (IndexError, ValueError): continue
+        if latest_time: self.ax.set_xlim(pd.to_datetime(latest_time) - pd.Timedelta(minutes=30), pd.to_datetime(latest_time))
         self.ax.set_title("Optical Density vs Time")
-        self.ax.set_xlabel("Time")
-        self.ax.set_ylabel("OD")
-        self.ax.legend()
-        self.ax.grid(True)
-        self.fig.autofmt_xdate()
-        self.fig.canvas.draw_idle()
+        self.ax.set_xlabel("Time"); self.ax.set_ylabel("OD")
+        self.ax.legend(); self.ax.grid(True); self.fig.autofmt_xdate(); self.fig.canvas.draw_idle()
