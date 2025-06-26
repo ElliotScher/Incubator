@@ -12,6 +12,15 @@ class LogFunction:
     @staticmethod
     def log_func(x, a, b):
         return a * np.log10(x) + b
+    
+class InverseFunction:
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+    @staticmethod
+    def inv_func(x, a, b):
+        return a * (1.0 / x) + b
 
 class CalibrationSession:
     def __init__(self, table):
@@ -34,11 +43,11 @@ class CalibrationSession:
         x = np.array(x)
         y = np.array(y)
 
-        params, _ = curve_fit(LogFunction.log_func, x, y)
+        params, _ = curve_fit(InverseFunction.inv_func, x, y)
         a, b = params
 
         # Compute R^2
-        y_pred = LogFunction.log_func(x, a, b)
+        y_pred = InverseFunction.inv_func(x, a, b)
         residuals = y - y_pred  # These are signed residuals
         abs_residuals = np.abs(residuals)  # absolute residuals for error bars
 
@@ -47,7 +56,7 @@ class CalibrationSession:
         r_squared = 1 - (ss_res / ss_tot)
 
         # Return residuals or absolute residuals as error bars
-        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
+        return channels, x.tolist(), y.tolist(), InverseFunction(a, b), r_squared, abs_residuals.tolist()
 
     @staticmethod        
     def run_test_json_calibration():
