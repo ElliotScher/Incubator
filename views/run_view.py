@@ -237,14 +237,14 @@ class RunView(tk.Frame):
     def toggle_pause(self):
         if not self._running: return
         self._paused = not self._paused
-        if self._paused: UARTUtil.send_data(self.ser, "CMD:PAUSE")
-        else: UARTUtil.send_data(self.ser, "CMD:RESUME")
+        if self._paused: UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
+        else: UARTUtil.send_data(self.ser, "CMD:RESUME_REACTION")
 
     def start_partial_export(self):
         self.action_button.config(state="disabled")
         self.play_pause_button.config(state="disabled")
         messagebox.showinfo("Exporting", "Pausing reaction to export partial data. The process will resume automatically.")
-        UARTUtil.send_data(self.ser, "CMD:PAUSE")
+        UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
         print("Sent PAUSE command for partial export.")
         self._poll_partial_export_status("waiting_for_pause")
 
@@ -257,7 +257,7 @@ class RunView(tk.Frame):
             else:
                 self.after(200, self._poll_partial_export_status, "waiting_for_pause")
         elif current_state == "resuming_reaction":
-            UARTUtil.send_data(self.ser, "CMD:RESUME")
+            UARTUtil.send_data(self.ser, "CMD:RESUME_REACTION")
             print("Sent RESUME command after partial export.")
             self._poll_partial_export_status("waiting_for_resume")
         elif current_state == "waiting_for_resume":
