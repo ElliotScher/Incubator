@@ -265,13 +265,13 @@ class CalibrationView(tk.Frame):
                     # Plot the fitted line
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
                     y_fit = a * (1 / x_fit) + b
-                    ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
+                    ax.plot(x_fit, y_fit, color="green", label="Fit: a*(1/V)+b")
 
                     ax.legend()
 
                     # Annotate with equation and R²
                     equation_text = (
-                        f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+                        f"y = {a:.3f}(1/V) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
                     )
                     plt.text(
                         0.10,
