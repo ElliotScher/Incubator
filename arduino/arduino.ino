@@ -62,7 +62,7 @@ void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
   stepper.setMaxSpeed(15000);
-  stepper.setAcceleration(20000);
+  stepper.setAcceleration(15000);
 }
 
 void loop() {
@@ -80,7 +80,6 @@ void loop() {
       break;
 
     case RUN_REACTION:
-      
       runReactionState();
       break;
   }
@@ -123,7 +122,7 @@ void runIdleState() {
     Serial1.println("PAUSE SUCCESSFUL");
   }
 
-  Serial.println(paused);
+//  Serial.println(paused);
 
   previousPaused = paused;
 }
@@ -244,6 +243,7 @@ void checkReactionStateSerial() {
         reactionState = REACT_NONE;
         currentState = IDLE;
       } else if (reactionStateInputBuffer == "CMD:PAUSE_REACTION") {
+        Serial.println("Pausing");
         currentState = IDLE;
         paused = true;
       } else if (reactionStateInputBuffer.startsWith("AGITATIONS:")) {

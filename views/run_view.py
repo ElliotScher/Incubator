@@ -177,12 +177,12 @@ class RunView(tk.Frame):
         if self._paused:
             # We want to pause. Send command to Arduino.
             # The button text will change to "Play" only upon receiving "PAUSE SUCCESSFUL"
-            UARTUtil.send_data(self.ser, "CMD:PAUSE")
+            UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
             print("Sent PAUSE command to Arduino.")
         else:
             # We want to resume. Send command to Arduino.
             # The button text will change to "Pause" only upon receiving "RESUME SUCCESSFUL"
-            UARTUtil.send_data(self.ser, "CMD:RESUME")
+            UARTUtil.send_data(self.ser, "CMD:PLAY_REACTION")
             print("Sent RESUME command to Arduino.")
 
     def on_click(self, event):
