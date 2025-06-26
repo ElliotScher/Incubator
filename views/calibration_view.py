@@ -8,10 +8,9 @@ from util.calibration.calibration_curve import LogarithmicCalibrationCurve
 from util.calibration.calibration_session import CalibrationSession
 from util.uart_util import UARTUtil
 import matplotlib
+from collections import defaultdict
 
 matplotlib.use("TkAgg")
-import re
-from collections import defaultdict
 
 
 class CalibrationView(tk.Frame):
@@ -34,7 +33,7 @@ class CalibrationView(tk.Frame):
         )
         button.pack(side="top", anchor="e")
 
-        info_text = "put text here"
+        info_text = "Enter known Optical Density (OD) values for your samples.\nThen run the calibration to generate a curve."
 
         info_label = tk.Label(
             self, text=info_text, justify="left", fg="black", font=("Arial", 12)
@@ -207,23 +206,20 @@ class CalibrationView(tk.Frame):
             line = UARTUtil.receive_data(self.ser)
             if line:
                 line = line.strip()
-                # Check for "OD:" prefix and extract the number
                 if "OD:" in line:
                     print("Received line:", line, "\n\n\n\n\n")
                     try:
-                        number_str = line[3:]  # Everything after "OD:"
+                        number_str = line[3:]
                         number = float(number_str)
                         received_numbers.append(number)
                     except ValueError:
-                        pass  # Ignore malformed numbers
+                        pass
 
-                # Check for calibration finished message
                 if "CMD:CALIBRATION_FINISHED" in line:
                     print("Calibration finished! Numbers received:", received_numbers)
                     modal.grab_release()
                     modal.destroy()
 
-                    # Create a 2D array: [channel_index, OD, received_number]
                     result_array = []
                     tree_items = list(self.tree.get_children())
                     for idx, number in enumerate(received_numbers):
@@ -237,42 +233,47 @@ class CalibrationView(tk.Frame):
 
                     self.calibration_session = CalibrationSession(result_array)
 
-                    graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
+                    # We still run this to get the raw data, but will ignore the log fit results
+                    graph_channels, graph_V, graph_OD, log, r_squared_log, error_bars = (
                         self.calibration_session.run_calibration()
                     )
 
-                    fig, ax = plt.subplots(figsize=(5, 4))
+                    # --- MODIFICATION: Perform a 1/x fit ---
+                    graph_V = np.array(graph_V)
+                    graph_OD = np.array(graph_OD)
 
-                    # Plot original data points without error bars
+                    # Transform x-data to 1/x for linear fitting (y = a*x' + b where x' = 1/x)
+                    inv_graph_V = 1.0 / graph_V
+                    a, b = np.polyfit(inv_graph_V, graph_OD, 1)
+
+                    # Calculate the R-squared value for the new 1/x fit
+                    y_predicted = a * inv_graph_V + b
+                    ss_res = np.sum((graph_OD - y_predicted) ** 2)
+                    ss_tot = np.sum((graph_OD - np.mean(graph_OD)) ** 2)
+                    r_squared = 1 - (ss_res / ss_tot)
+                    # --- END MODIFICATION ---
+
+                    fig, ax = plt.subplots(figsize=(5, 4))
                     ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
 
-                    # Plot error bars centered on the fit line
-                    a, b = log.a, log.b
-                    graph_OD_fit = a * np.log10(graph_V) + b
+                    # --- MODIFICATION: Update error bar and fit line plotting for 1/x model ---
+                    graph_OD_fit = a / graph_V + b
 
-                    # Draw custom vertical error bars centered on the fit line
-                    for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-                        ax.vlines(
-                            x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1
-                        )
-                        ax.hlines(
-                            y_fit - yerr, x - 0.05, x + 0.05, color="red"
-                        )  # bottom cap
-                        ax.hlines(
-                            y_fit + yerr, x - 0.05, x + 0.05, color="red"
-                        )  # top cap
+                    for x, y_fit_val, yerr in zip(graph_V, graph_OD_fit, error_bars):
+                        ax.vlines(x, y_fit_val - yerr, y_fit_val + yerr, color="red", linewidth=1)
+                        ax.hlines(y_fit_val - yerr, x - 0.05, x + 0.05, color="red")
+                        ax.hlines(y_fit_val + yerr, x - 0.05, x + 0.05, color="red")
 
-                    # Plot the fitted line
+                    # Plot the new fitted line
                     x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-                    y_fit = a * np.log10(x_fit) + b
-                    ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
-
+                    y_fit = a / x_fit + b
+                    ax.plot(x_fit, y_fit, color="green", label="Fit: y = a/x + b")
                     ax.legend()
 
-                    # Annotate with equation and R²
-                    equation_text = (
-                        f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
-                    )
+                    # Annotate with the new equation and R²
+                    equation_text = f"y = {a:.3f}/x + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+                    # --- END MODIFICATION ---
+
                     plt.text(
                         0.10,
                         0.10,
@@ -297,16 +298,6 @@ class CalibrationView(tk.Frame):
                             bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3),
                         )
 
-                    for i, label in enumerate(graph_channels):
-                        ax.annotate(
-                            str(label),
-                            (graph_V[i], graph_OD[i]),
-                            textcoords="offset points",
-                            xytext=(5, 5),
-                            ha="left",
-                            fontsize=10,
-                        )
-
                     ax.set_xlabel("Voltage")
                     ax.set_ylabel("Optical Density")
                     ax.set_title("Calibration: Voltage vs Optical Density")
@@ -320,47 +311,60 @@ class CalibrationView(tk.Frame):
                     self.canvas.get_tk_widget().pack(
                         side="right", fill="both", expand=True
                     )
-                    LogarithmicCalibrationCurve.init(
-                        a, b
-                    )  # Initialize the curve with log base 10
+
+                    # --- MODIFICATION: Handle the initialization of the curve ---
+                    # The original code initialized a LogarithmicCalibrationCurve.
+                    # This line is now commented out as it's for the wrong model.
+                    # You may need to create and initialize a new curve class here.
+                    # LogarithmicCalibrationCurve.init(a, b)
+                    # --- END MODIFICATION ---
                     return
 
-            # Poll again after 100 ms
             modal.after(100, poll_uart)
-
-        poll_uart()
 
     def run_calibration_from_json(self):
         self.calibration_session = CalibrationSession(None)
 
-        graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
+        graph_channels, graph_V, graph_OD, log, r_squared_log, error_bars = (
             self.calibration_session.run_test_json_calibration()
         )
 
-        fig, ax = plt.subplots(figsize=(5, 4))
+        # --- MODIFICATION: Perform a 1/x fit ---
+        graph_V = np.array(graph_V)
+        graph_OD = np.array(graph_OD)
 
-        # Plot original data points without error bars
+        # Transform x-data to 1/x for linear fitting (y = a*x' + b where x' = 1/x)
+        inv_graph_V = 1.0 / graph_V
+        a, b = np.polyfit(inv_graph_V, graph_OD, 1)
+
+        # Calculate the R-squared value for the new 1/x fit
+        y_predicted = a * inv_graph_V + b
+        ss_res = np.sum((graph_OD - y_predicted) ** 2)
+        ss_tot = np.sum((graph_OD - np.mean(graph_OD)) ** 2)
+        r_squared = 1 - (ss_res / ss_tot)
+        # --- END MODIFICATION ---
+
+        fig, ax = plt.subplots(figsize=(5, 4))
         ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
 
-        # Plot error bars centered on the fit line
-        a, b = log.a, log.b
-        graph_OD_fit = a * np.log10(graph_V) + b
+        # --- MODIFICATION: Update error bar and fit line plotting for 1/x model ---
+        graph_OD_fit = a / graph_V + b
 
-        # Draw custom vertical error bars centered on the fit line
-        for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-            ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
-            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
-            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
+        for x, y_fit_val, yerr in zip(graph_V, graph_OD_fit, error_bars):
+            ax.vlines(x, y_fit_val - yerr, y_fit_val + yerr, color="red", linewidth=1)
+            ax.hlines(y_fit_val - yerr, x - 0.05, x + 0.05, color="red")
+            ax.hlines(y_fit_val + yerr, x - 0.05, x + 0.05, color="red")
 
-        # Plot the fitted line
+        # Plot the new fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-        y_fit = a * np.log10(x_fit) + b
-        ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
-
+        y_fit = a / x_fit + b
+        ax.plot(x_fit, y_fit, color="green", label="Fit: y = a/x + b")
         ax.legend()
 
-        # Annotate with equation and R²
-        equation_text = f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+        # Annotate with the new equation and R²
+        equation_text = f"y = {a:.3f}/x + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+        # --- END MODIFICATION ---
+
         plt.text(
             0.10,
             0.10,
@@ -385,16 +389,6 @@ class CalibrationView(tk.Frame):
                 bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3),
             )
 
-        for i, label in enumerate(graph_channels):
-            ax.annotate(
-                str(label),
-                (graph_V[i], graph_OD[i]),
-                textcoords="offset points",
-                xytext=(5, 5),
-                ha="left",
-                fontsize=10,
-            )
-
         ax.set_xlabel("Voltage")
         ax.set_ylabel("Optical Density")
         ax.set_title("Calibration: Voltage vs Optical Density")
@@ -409,22 +403,16 @@ class CalibrationView(tk.Frame):
 
     def run_10_calibrations(self):
         results = []
-        for _ in range(10):
+        for i in range(10):
             modal = tk.Toplevel(self)
             modal.title("Calibration Running")
             modal.geometry("350x200")
             modal.resizable(False, False)
 
             run_label = tk.Label(
-                modal, text=f"Run {_ + 1} of 10", font=("Arial", 12, "bold")
+                modal, text=f"Run {i + 1} of 10", font=("Arial", 12, "bold")
             )
             run_label.pack(pady=(10, 0))
-
-            # stdev_label = tk.Label(modal, text=f"Current StDev: {last_stdev}", font=("Arial", 11))
-            # stdev_label.pack(pady=(0, 10))
-
-            # avg_label = tk.Label(modal, text=f"Current Mean: {last_avg}", font=("Arial", 11))
-            # avg_label.pack(pady=(0, 10))
 
             label = tk.Label(
                 modal,
@@ -479,11 +467,11 @@ class CalibrationView(tk.Frame):
                         tree_items = list(self.tree.get_children())
                         for idx, number in enumerate(received_numbers):
                             if idx < len(tree_items):
-                                channel_index = int(
-                                    self.tree.item(tree_items[idx], "values")[0]
-                                )
-                                od = float(self.tree.item(tree_items[idx], "values")[1])
-                                result_array.append([channel_index, float(number), od])
+                                od_val = self.tree.item(tree_items[idx], "values")[1]
+                                if od_val: # Ensure OD is not empty
+                                    channel_index = int(self.tree.item(tree_items[idx], "values")[0])
+                                    od = float(od_val)
+                                    result_array.append([channel_index, float(number), od])
                         results.append(result_array)
                         return
 
@@ -491,10 +479,6 @@ class CalibrationView(tk.Frame):
 
             poll_uart()
             self.wait_window(modal)
-
-        # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
-        # You can process or save results here as needed
-        # Calculate variance per channel for voltage
 
         channel_voltages = defaultdict(list)
         for run in results:
