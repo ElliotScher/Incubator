@@ -3,9 +3,9 @@
 #include "StepperHomer.h"
 #include "ChannelStepper.h"
 
-#define dirPin 2
-#define stepPin 3
-#define homingPin 28
+#define dirPin 6
+#define stepPin 5
+#define homingPin 7
 #define ODPin A1
 #define motorInterfaceType 1
 
@@ -59,8 +59,8 @@ String reactionStateInputBuffer = "";
 void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
-  stepper.setMaxSpeed(3000);
-  stepper.setAcceleration(3000);
+  stepper.setMaxSpeed(15000);
+  stepper.setAcceleration(20000);
 }
 
 void loop() {
@@ -188,7 +188,7 @@ void runCalibrationState() {
 
     case CAL_READ_ANALOG:
       currentOD = 0;
-      delay(5000);
+      delay(1000);
       for (int i = 0; i < 100; i++) {
         int OD = analogRead(ODPin);
         Serial.println(OD);
