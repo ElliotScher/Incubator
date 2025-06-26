@@ -168,6 +168,7 @@ class RunView(tk.Frame):
             self._stop_sequence()
 
     def toggle_pause(self):
+        print("the button was fucking pressed")
         """Sends a pause or resume command to the Arduino."""
         if not self._running: # Safeguard: button should be disabled if not running
             return
@@ -175,6 +176,7 @@ class RunView(tk.Frame):
         self._paused = not self._paused
 
         if self._paused:
+            print("the paused state is true")
             # We want to pause. Send command to Arduino.
             # The button text will change to "Play" only upon receiving "PAUSE SUCCESSFUL"
             UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
