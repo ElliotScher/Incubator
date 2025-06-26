@@ -22,6 +22,8 @@ import zipfile
 
 
 class RunView(tk.Frame):
+    _first_check_done = False # Class attribute to ensure check runs only once
+
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -137,6 +139,83 @@ class RunView(tk.Frame):
         )
         self.action_button.pack(side="left", padx=10)
 
+        # Trigger the one-time check for recovered data
+        if not RunView._first_check_done:
+            self.after(100, self._check_for_recovered_data)
+
+    def _check_for_recovered_data(self):
+        """Checks for leftover data from a failed run, runs only once."""
+        RunView._first_check_done = True  # Mark as done immediately
+        temp_dir = "/var/tmp/incubator/tmp_data"
+
+        try:
+            if os.path.exists(temp_dir) and os.listdir(temp_dir):
+                response = messagebox.askyesno(
+                    "Recover Data",
+                    "Warning: Incomplete reaction data found, likely from a power failure.\n\n"
+                    "Do you want to recover this data now?\n\n"
+                    "(If you choose 'No', this data will be permanently deleted.)"
+                )
+                if response:
+                    self._recover_data_to_usb()
+                else:
+                    self._clear_temp_data()
+                    messagebox.showinfo("Data Discarded", "The incomplete reaction data has been deleted.")
+        except Exception as e:
+            messagebox.showerror("Recovery Check Error", f"An error occurred while checking for recovered data: {e}")
+
+    def _recover_data_to_usb(self):
+        """Guides the user to save recovered data to a USB drive."""
+        messagebox.showinfo("Insert USB", "Please insert a USB drive, then click OK to recover the data.")
+
+        usb_mount_base = "/media/incubator"
+        mounted_drives = []
+        try:
+            if os.path.exists(usb_mount_base):
+                mounted_drives = [os.path.join(usb_mount_base, d) for d in os.listdir(usb_mount_base) if os.path.ismount(os.path.join(usb_mount_base, d))]
+        except Exception as e:
+            messagebox.showerror("USB Error", f"An error occurred while searching for USB drives: {e}")
+            return
+
+        if not mounted_drives:
+            messagebox.showerror("USB Not Found", "No USB drive was detected. The recovered data could not be saved.")
+            return
+
+        mount_point = mounted_drives[0]
+
+        try:
+            temp_dir = "/var/tmp/incubator/tmp_data"
+            dst_dir = os.path.join(mount_point, "Incubator_Data_Recovered")
+            os.makedirs(dst_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            archive_name = f"recovered_data_{timestamp}.zip"
+            local_archive_path = os.path.join(tempfile.gettempdir(), archive_name)
+
+            with zipfile.ZipFile(local_archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for root, _, files in os.walk(temp_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, temp_dir))
+
+            shutil.copy2(local_archive_path, dst_dir)
+            os.remove(local_archive_path)
+
+            messagebox.showinfo("Recovery Successful", f"Recovered data successfully saved to:\n{dst_dir}")
+            self._clear_temp_data()
+        except Exception as e:
+            messagebox.showerror("Recovery Error", f"An error occurred during the recovery process: {e}")
+
+    def _clear_temp_data(self):
+        """Safely removes and recreates the temporary data directory."""
+        temp_dir = "/var/tmp/incubator/tmp_data"
+        try:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+            os.makedirs(temp_dir, exist_ok=True)
+            print(f"Directory {temp_dir} has been cleared.")
+        except Exception as e:
+            print(f"Error clearing temp data: {e}")
 
     def toggle_reaction(self):
         if not self._running:
@@ -158,14 +237,14 @@ class RunView(tk.Frame):
     def toggle_pause(self):
         if not self._running: return
         self._paused = not self._paused
-        if self._paused: UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
-        else: UARTUtil.send_data(self.ser, "CMD:RESUME_REACTION")
+        if self._paused: UARTUtil.send_data(self.ser, "CMD:PAUSE")
+        else: UARTUtil.send_data(self.ser, "CMD:RESUME")
 
     def start_partial_export(self):
         self.action_button.config(state="disabled")
         self.play_pause_button.config(state="disabled")
         messagebox.showinfo("Exporting", "Pausing reaction to export partial data. The process will resume automatically.")
-        UARTUtil.send_data(self.ser, "CMD:PAUSE_REACTION")
+        UARTUtil.send_data(self.ser, "CMD:PAUSE")
         print("Sent PAUSE command for partial export.")
         self._poll_partial_export_status("waiting_for_pause")
 
@@ -178,7 +257,7 @@ class RunView(tk.Frame):
             else:
                 self.after(200, self._poll_partial_export_status, "waiting_for_pause")
         elif current_state == "resuming_reaction":
-            UARTUtil.send_data(self.ser, "CMD:RESUME_REACTION")
+            UARTUtil.send_data(self.ser, "CMD:RESUME")
             print("Sent RESUME command after partial export.")
             self._poll_partial_export_status("waiting_for_resume")
         elif current_state == "waiting_for_resume":
@@ -204,7 +283,7 @@ class RunView(tk.Frame):
                 return
 
             mount_point = mounted_drives[0]
-            dst_dir = os.path.join(mount_point, "Incubator_Data")
+            dst_dir = os.path.join(mount_point, "Incubator_Data_Recovered")
             os.makedirs(dst_dir, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -215,8 +294,7 @@ class RunView(tk.Frame):
                 for root, _, files in os.walk(src_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, src_dir)
-                        zipf.write(file_path, arcname)
+                        zipf.write(file_path, os.path.relpath(file_path, src_dir))
 
             shutil.copy2(local_archive_path, dst_dir)
             print(f"Copied partial data to {os.path.join(dst_dir, archive_name)}")
@@ -251,14 +329,23 @@ class RunView(tk.Frame):
             os.makedirs(dst_dir, exist_ok=True)
             for filename in os.listdir(src_dir):
                 shutil.copy2(os.path.join(src_dir, filename), dst_dir)
+            
+            print(f"Successfully copied final data to {dst_dir}.")
+            
+            print(f"Cleaning processed data directory: {src_dir}")
+            shutil.rmtree(src_dir)
+            os.makedirs(src_dir, exist_ok=True)
+            
+            temp_data_dir = "/var/tmp/incubator/tmp_data"
+            if os.path.exists(temp_data_dir):
+                print(f"Cleaning temporary data directory: {temp_data_dir}")
+                shutil.rmtree(temp_data_dir)
+                os.makedirs(temp_data_dir, exist_ok=True)
 
-            response = messagebox.askyesno(
-                "Export Successful", f"Data copied to {dst_dir}.\n\nDelete exported data from device?"
+            messagebox.showinfo(
+                "Export Successful",
+                f"Data successfully copied to {dst_dir}.\n\nAll temporary and processed data have been cleaned from the device."
             )
-            if response:
-                shutil.rmtree(src_dir)
-                os.makedirs(src_dir, exist_ok=True)
-                messagebox.showinfo("Data Deleted", "Exported data has been deleted from the device.")
         except Exception as e:
             messagebox.showerror("Export Error", f"An error occurred during the export process: {e}")
 
@@ -273,6 +360,8 @@ class RunView(tk.Frame):
         return [self.tree.set(item, "Index") for item in self.tree.get_children() if self.tree.set(item, "Selected") == "[x]"]
 
     def _start_sequence(self):
+        # Before starting, ensure temp data is clear
+        self._clear_temp_data() 
         for rd in self.data: rd.clear()
         self.data_iterator = 0
         UARTUtil.send_data(self.ser, "AGITATIONS:" + str(self.agitation_var.get()))

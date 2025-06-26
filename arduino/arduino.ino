@@ -102,7 +102,7 @@ void checkSuperStateSerial() {
         currentState = RUN_REACTION;
       } else if (superStateInputBuffer == "CMD:IDLE") {
         currentState = IDLE;
-      } else if (superStateInputBuffer == "CMD:PLAY_REACTION") {
+      } else if (superStateInputBuffer == "CMD:PLAY_REACTION" || superStateInputBuffer == "CMD:RESUME_REACTION") {
         currentState = RUN_REACTION;
         Serial1.println("RESUME SUCCESSFUL");
         paused = false;
