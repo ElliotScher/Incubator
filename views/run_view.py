@@ -35,6 +35,7 @@ class RunView(tk.Frame):
         self.data_iterator = 0
 
         self._running = False  # Flag to control the reaction state
+        self._paused = False # Flag to control the pause state
 
         label = tk.Label(self, text="Reaction", font=("Arial", 18))
         label.pack(side="top", anchor="n", pady=10)
@@ -131,6 +132,18 @@ class RunView(tk.Frame):
         )
         self.run_stop_button.pack(side="left", padx=10)
 
+        # Play/Pause button
+        self.play_pause_button = tk.Button(
+            button_frame,
+            text="Pause",
+            font=("Arial", 12, "bold"),
+            width=8,
+            height=2,
+            command=self.toggle_pause,
+            state="disabled"  # Initially disabled
+        )
+        self.play_pause_button.pack(side="left", padx=5)
+
 
         self.last_usb_path = None
         self.after(3000, self.check_usb_and_copy)
@@ -140,14 +153,29 @@ class RunView(tk.Frame):
         if not self._running:
             # Start the reaction
             self._running = True
+            self._paused = False # Ensure reaction starts in an un-paused state
             self.run_stop_button.config(text="Stop", bg="red")
+            self.play_pause_button.config(state="normal", text="Pause") # Enable pause button
             self._start_sequence()
         else:
             # Stop the reaction
             self._running = False
+            self._paused = False # Reset pause state
             self.run_stop_button.config(text="Run", bg="green")
+            self.play_pause_button.config(state="disabled", text="Pause") # Disable pause button
             self._stop_sequence()
 
+    def toggle_pause(self):
+        """Toggles the pause state of a running reaction."""
+        if not self._running: # Safeguard: button should be disabled if not running
+            return
+        
+        self._paused = not self._paused
+
+        if self._paused:
+            self.play_pause_button.config(text="Play")
+        else:
+            self.play_pause_button.config(text="Pause")
 
     def on_click(self, event):
         region = self.tree.identify("region", event.x, event.y)
@@ -182,13 +210,18 @@ class RunView(tk.Frame):
 
         def poll_uart():
             if not self._running:
-                self.data[0].export_csv(
-                    "reaction_data.csv"
-                )  # Export data when stopping
+                # This part of the logic might be simplified or removed if stopping
+                # is handled exclusively by _stop_sequence, but left for safety.
                 messagebox.showinfo(
-                    "Info", "Reaction data exported to reaction_data.csv"
+                    "Info", "Reaction stopped."
                 )
                 return
+
+            # If paused, skip data processing but keep the poll loop alive
+            if self._paused:
+                self.after(100, poll_uart)
+                return
+
             line = UARTUtil.receive_data(self.ser)
             if line:
                 if "OD:" in line:
@@ -218,8 +251,9 @@ class RunView(tk.Frame):
                             self.data_iterator = 0
                     except ValueError:
                         pass  # Ignore malformed numbers
-            # Schedule next poll
-            self.after(100, poll_uart)  # Poll every 100 ms
+            
+            # Schedule next poll regardless of receiving data to keep the loop active
+            self.after(100, poll_uart)
 
         poll_uart()
 
@@ -231,9 +265,10 @@ class RunView(tk.Frame):
 
         # Export each ReactionData object to a CSV file
         for i, rd in enumerate(self.data):
-            filename = f"channel_{i+1}.csv"
-            filepath = os.path.join(temp_dir, filename)
-            rd.export_csv(filepath)
+            if not rd.get_all().empty: # Only save if data exists
+                filename = f"channel_{i+1}.csv"
+                filepath = os.path.join(temp_dir, filename)
+                rd.export_csv(filepath)
 
         # Create output directory if it doesn't exist
         output_dir = "/var/tmp/incubator/processedcsvs"
@@ -260,25 +295,26 @@ class RunView(tk.Frame):
         messagebox.showinfo("Stopped", f"All data exported to:\n{archive_path}")
 
     def update_plot(self, frame=None):
-        if not hasattr(self, "ax"):
-            return  # Axes not initialized yet
+        # If axes don't exist or if the reaction is paused, do not update the plot
+        if not hasattr(self, "ax") or self._paused:
+            return
 
         self.ax.clear()  # Clear old plots
 
         selected_indices = self.get_selected_indices()
         latest_time = None  # Keep track of latest time for scrolling
 
-        colors = ["r", "g", "b", "y", "c", "m", "k"]  # Cycle through colors
+        colors = plt.cm.get_cmap('tab10').colors # Use a colormap for more colors
         color_index = 0
 
-        for idx in selected_indices:
+        for idx_str in selected_indices:
             try:
-                df = self.data[int(idx) - 1].get_all()
+                idx = int(idx_str)
+                df = self.data[idx - 1].get_all()
                 if df.empty or "time" not in df or "optical_density" not in df:
                     continue
 
                 # Convert 'time' to datetime objects if needed
-                # If 'time' is a pandas datetime dtype already, this is no-op
                 if not pd.api.types.is_datetime64_any_dtype(df["time"]):
                     times = pd.to_datetime(df["time"])
                 else:
@@ -305,16 +341,23 @@ class RunView(tk.Frame):
             except (IndexError, ValueError, KeyError, AttributeError):
                 continue
 
-        # Optional: auto-scroll to the latest time (last 30 minutes visible)
+        # Auto-scroll to the latest time (last 30 minutes visible)
         if latest_time is not None:
-            start_time = latest_time - pd.Timedelta(seconds=(60 * 30))
-            self.ax.set_xlim(start_time, latest_time)
-
+            # Ensure latest_time is a Timestamp for arithmetic
+            latest_time_ts = pd.to_datetime(latest_time)
+            start_time = latest_time_ts - pd.Timedelta(minutes=30)
+            self.ax.set_xlim(start_time, latest_time_ts)
+        
+        self.ax.set_title("Optical Density vs Time")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("OD")
         self.ax.legend()
+        self.ax.grid(True)
+        self.fig.autofmt_xdate() # Improve date formatting
         self.fig.canvas.draw_idle()  # Refresh the plot
 
     def check_usb_and_copy(self):
-        usb_mount_base = "/media/incubator"  # or "/run/media/username" on some systems
+        usb_mount_base = "/media/incubator"
         try:
             if os.path.exists(usb_mount_base):
                 mounted = [os.path.join(usb_mount_base, d) for d in os.listdir(usb_mount_base)]
@@ -326,10 +369,10 @@ class RunView(tk.Frame):
                         if not self._running:  # Only copy if NOT running
                             try:
                                 src_dir = "/var/tmp/incubator/processedcsvs"
-                                if not os.path.exists(src_dir):
+                                if not os.path.exists(src_dir) or not os.listdir(src_dir):
                                     continue # Nothing to copy
 
-                                dst_dir = mount_point
+                                dst_dir = os.path.join(mount_point, "Incubator_Data")
                                 os.makedirs(dst_dir, exist_ok=True)
 
                                 for filename in os.listdir(src_dir):
@@ -339,37 +382,38 @@ class RunView(tk.Frame):
 
                                 print(f"✅ Data copied to USB: {dst_dir}")
 
-                                # Show popup asking to delete temp data
                                 response = messagebox.askyesno(
                                     "Data Copied",
-                                    "Data was successfully copied to the USB drive.\nDo you want to delete all temporary data?"
+                                    "Data was successfully copied to the USB drive.\nDo you want to delete the temporary and processed data?"
                                 )
                                 if response:
+                                    # Clean up processed data
+                                    shutil.rmtree(src_dir)
+                                    os.makedirs(src_dir, exist_ok=True)
+                                    # Clean up temp data
                                     temp_data_dir = "/var/tmp/incubator/tmp_data"
                                     if os.path.exists(temp_data_dir):
-                                        for filename in os.listdir(temp_data_dir):
-                                            file_path = os.path.join(temp_data_dir, filename)
-                                            os.remove(file_path)
-                                    print("🗑️ Temporary data deleted.")
+                                        shutil.rmtree(temp_data_dir)
+                                        os.makedirs(temp_data_dir, exist_ok=True)
+                                    print("🗑️ Temporary and processed data deleted.")
                                 else:
                                     print("⚠️ Temporary data retained.")
 
-                                # After copying, move all files from processedcsvs to savedcsvs
-                                saved_dir = "/var/tmp/incubator/savedcsvs"
-                                os.makedirs(saved_dir, exist_ok=True)
-                                for filename in os.listdir(src_dir):
-                                    src_path = os.path.join(src_dir, filename)
-                                    dst_path = os.path.join(saved_dir, filename)
-                                    shutil.move(src_path, dst_path)
-                                print(f"📁 Moved processed CSVs to: {saved_dir}")
+                                    # Move processed CSVs to a saved directory anyway
+                                    saved_dir = "/var/tmp/incubator/savedcsvs"
+                                    os.makedirs(saved_dir, exist_ok=True)
+                                    for filename in os.listdir(src_dir):
+                                        src_path = os.path.join(src_dir, filename)
+                                        dst_path = os.path.join(saved_dir, filename)
+                                        shutil.move(src_path, dst_path)
+                                    print(f"📁 Moved processed CSVs to: {saved_dir}")
+
                             except Exception as e:
+                                messagebox.showerror("USB Copy Error", f"Failed to copy data to USB: {e}")
                                 print(f"❌ Error copying to USB: {e}")
             else:
-                 self.last_usb_path = None # Reset if base directory disappears
-        except FileNotFoundError:
-             self.last_usb_path = None # Reset if base directory disappears
+                 self.last_usb_path = None
         except Exception as e:
             print(f"An error occurred in check_usb_and_copy: {e}")
-
 
         self.after(3000, self.check_usb_and_copy)
