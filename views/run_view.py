@@ -31,7 +31,7 @@ class RunView(tk.Frame):
         self.ser = UARTUtil.open_port()
 
         self.data = [ReactionData(i) for i in range(50)]
-        self.data_iterator = 0
+        self.data_iterator = 1
 
         self._running = False
         self._paused = False
