@@ -31,6 +31,7 @@ class RunView(tk.Frame):
         self.ser = UARTUtil.open_port()
 
         self.data = [ReactionData(i) for i in range(50)]
+        self.data_iterator = 0
 
         self._running = False
         self._paused = False
@@ -371,7 +372,7 @@ class RunView(tk.Frame):
         # Before starting, ensure temp data is clear
         self._clear_temp_data() 
         for rd in self.data: rd.clear()
-        self.data_iterator = 1
+        self.data_iterator = 0
         UARTUtil.send_data(self.ser, "AGITATIONS:" + str(self.agitation_var.get()))
         UARTUtil.send_data(self.ser, "CMD:RUNREACTION")
         self.poll_uart()
@@ -389,30 +390,22 @@ class RunView(tk.Frame):
             elif "OD:" in line and not self.arduino_paused_ack:
                 try:
                     raw_value = float(line[3:])
-                        
+                    
+                    # Convert the raw value to calibrated OD
                     processed_od = self._convert_raw_to_od(raw_value)
 
-                    channelNum = 0
-                    # wait for uart to tell the raspberry pi what channel to write to
-                    channel = UARTUtil.receive_data(self.ser)
-                    if "CH:" in channel:
-                        channelNum = int(channel[3:]) - 1
-
-                    self.data[channelNum - 1].add_entry(
+                    self.data[self.data_iterator].add_entry(
                         time=np.datetime64("now", "ms"),
-                        optical_density=processed_od,
+                        optical_density=processed_od,  # Use the processed value
                         temperature=None
                     )
-
-
                     csv_dir = "/var/tmp/incubator/tmp_data"
                     os.makedirs(csv_dir, exist_ok=True)
-                    self.data[channelNum - 1].export_csv(f"{csv_dir}/channel_{channelNum}_data.csv")
-                        
-                except (ValueError, IndexError) as e:
-                    # Optional: Log the error for better debugging
-                    print(f"Could not process UART line: '{line}'. Error: {e}")
-                    pass
+                    self.data[self.data_iterator].export_csv(f"{csv_dir}/channel_{self.data_iterator + 1}_data.csv")
+                    self.data_iterator += 1
+                    if (self.data_iterator >= 50):
+                        self.data_iterator = 0
+                except (ValueError, IndexError): pass
         self.after(100, self.poll_uart)
 
     def _stop_sequence(self):
