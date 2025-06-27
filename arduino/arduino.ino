@@ -10,8 +10,8 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 25, 125, 1250, 100);
-ChannelStepper channelStepper(stepper, 50, 48, 800, 31.25);
+StepperHomer homer(stepper, homingPin, 75, 125, 1250, 100);
+ChannelStepper channelStepper(stepper, 50, 48, 500);
 
 
 // Calibration Variables
@@ -310,9 +310,6 @@ void runReactionState() {
     case REACT_TRANSMIT_DATA:
       Serial1.print("OD:");
       Serial1.println(currentOD);
-      
-      Serial1.print("CHANNEL:");
-      Serial1.println(channelIterator);
 
       channelIterator++;
       if (channelIterator > 50) {

@@ -244,7 +244,7 @@ class CalibrationView(tk.Frame):
                         self.calibration_session.run_calibration()
                     )
 
-                      # --- ADD THIS SECTION ---
+                    # --- ADD THIS SECTION ---
                     # Get the calculated parameters and save them
                     a, b = log.a, log.b
                     self.save_calibration_to_csv(a, b, r_squared)
@@ -525,7 +525,7 @@ class CalibrationView(tk.Frame):
         Saves the calibration parameters to a CSV file with a timestamp.
         Deletes the old calibration file if it exists.
         """
-        filepath = '/tmp/var/incubator/calibrations.csv'
+        filepath = "/tmp/var/incubator/calibrations.csv"
         try:
             # Ensure the parent directory exists
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -535,19 +535,25 @@ class CalibrationView(tk.Frame):
                 os.remove(filepath)
 
             # Get the current timestamp in a standard format
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # Define the header and the data row
-            header = ['timestamp', 'a', 'b', 'r_squared']
-            data_row = [timestamp, f'{a:.4f}', f'{b:.4f}', f'{r_squared:.4f}']
+            header = ["timestamp", "a", "b", "r_squared"]
+            data_row = [timestamp, f"{a:.4f}", f"{b:.4f}", f"{r_squared:.4f}"]
 
             # Write the header and data row to the new file
-            with open(filepath, 'w', newline='') as csvfile:
+            with open(filepath, "w", newline="") as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(header)
                 writer.writerow(data_row)
 
         except IOError as e:
-            messagebox.showerror("File Save Error", f"Could not save calibration data to {filepath}\n\nError: {e}")
+            messagebox.showerror(
+                "File Save Error",
+                f"Could not save calibration data to {filepath}\n\nError: {e}",
+            )
         except Exception as e:
-            messagebox.showerror("Error", f"An unexpected error occurred while saving the calibration data:\n{e}")
+            messagebox.showerror(
+                "Error",
+                f"An unexpected error occurred while saving the calibration data:\n{e}",
+            )

@@ -10,8 +10,6 @@ private:
   AccelStepper& stepper;
   const int totalChannels;
   const int zeroPosition;
-  const int stepsPerRev;
-  const float gearRatio;
   const int stepsPerChannel;
 
   int currentChannel;
@@ -20,8 +18,7 @@ public:
   ChannelStepper(AccelStepper& stepper_,
                  int totalChannels_,
                  int zeroPosition_,
-                 int stepsPerRev_,
-                 float gearRatio_);
+                 int stepsPerChannel_);
 
   int getCurrentChannel() const;
   void setCurrentChannel(int channel);

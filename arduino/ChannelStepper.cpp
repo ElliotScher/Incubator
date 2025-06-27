@@ -3,14 +3,11 @@
 ChannelStepper::ChannelStepper(AccelStepper& stepper_,
                                int totalChannels_,
                                int zeroPosition_,
-                               int stepsPerRev_,
-                               float gearRatio_)
+                               int stepsPerChannel_)
   : stepper(stepper_),
     totalChannels(totalChannels_),
     zeroPosition(zeroPosition_),
-    stepsPerRev(stepsPerRev_),
-    gearRatio(gearRatio_),
-    stepsPerChannel(static_cast<int>((stepsPerRev_ * gearRatio_) / totalChannels_)),
+    stepsPerChannel(stepsPerChannel_),
     currentChannel(zeroPosition_)
 {
 }
