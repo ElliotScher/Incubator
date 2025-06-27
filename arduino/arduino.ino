@@ -312,7 +312,9 @@ void runReactionState() {
       Serial1.println(currentOD);
 
       channelIterator++;
-      channelIterator %= 50;
+      if (channelIterator > 50) {
+        channelIterator%=50;
+      }
       if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
       } else {
