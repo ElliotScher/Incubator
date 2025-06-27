@@ -31,7 +31,6 @@ class RunView(tk.Frame):
         self.ser = UARTUtil.open_port()
 
         self.data = [ReactionData(i) for i in range(50)]
-        self.data_iterator = 1
 
         self._running = False
         self._paused = False
@@ -389,31 +388,26 @@ class RunView(tk.Frame):
                 self.play_pause_button.config(text="Pause")
             elif "OD:" in line and not self.arduino_paused_ack:
                 try:
-                    # Convert the 1-based iterator (1-50) to a 0-based list index (0-49)
-                    current_channel_index = self.data_iterator - 1
-
-                    # Ensure the index is within the valid range before access
-                    if 0 <= current_channel_index < 50:
-                        raw_value = float(line[3:])
+                    raw_value = float(line[3:])
                         
-                        # Convert the raw value to calibrated OD
-                        processed_od = self._convert_raw_to_od(raw_value)
+                    processed_od = self._convert_raw_to_od(raw_value)
 
-                        # Use the correct, 0-based index to access the data list
-                        self.data[current_channel_index].add_entry(
-                            time=np.datetime64("now", "ms"),
-                            optical_density=processed_od,
-                            temperature=None
-                        )
-                        csv_dir = "/var/tmp/incubator/tmp_data"
-                        os.makedirs(csv_dir, exist_ok=True)
-                        # Use the 1-based iterator for the filename to keep it intuitive
-                        self.data[current_channel_index].export_csv(f"{csv_dir}/channel_{self.data_iterator}_data.csv")
+                    channelNum = 0
+                    # wait for uart to tell the raspberry pi what channel to write to
+                    channel = UARTUtil.receive_data(self.ser)
+                    if "CH:" in channel:
+                        channelNum = int(channel[3:]) - 1
 
-                    # Increment and wrap the iterator for the next channel
-                    self.data_iterator += 1
-                    if self.data_iterator > 50:
-                        self.data_iterator = 1  # Reset to channel 1 for the next cycle
+                    self.data[channelNum - 1].add_entry(
+                        time=np.datetime64("now", "ms"),
+                        optical_density=processed_od,
+                        temperature=None
+                    )
+
+
+                    csv_dir = "/var/tmp/incubator/tmp_data"
+                    os.makedirs(csv_dir, exist_ok=True)
+                    self.data[channelNum - 1].export_csv(f"{csv_dir}/channel_{channelNum}_data.csv")
                         
                 except (ValueError, IndexError) as e:
                     # Optional: Log the error for better debugging
