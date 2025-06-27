@@ -391,39 +391,23 @@ class RunView(tk.Frame):
                 try:
                     raw_value = float(line[3:])
                     
-                    # Convert the raw value to a calibrated OD value
+                    # Convert the raw value to calibrated OD
                     processed_od = self._convert_raw_to_od(raw_value)
 
-                    # Receive the next line, which should contain the channel number
-                    channel_line = UARTUtil.receive_data(self.ser)
-                    
-                    if channel_line:
-                        # Parse the channel number from the received line.
-                        # This assumes the channel is sent as an integer.
-                        # We subtract 1 to convert from a 1-based channel to a 0-based list index.
-                        channel_index = int(channel_line.strip()) - 1
-
-                        # Ensure the received channel index is valid
-                        if 0 <= channel_index < len(self.data):
-                            # Add the data entry to the correct channel's data object
-                            self.data[channel_index].add_entry(
-                                time=np.datetime64("now", "ms"),
-                                optical_density=processed_od,  # Use the processed value
-                                temperature=None  # Or handle temperature if also received
-                            )
-                            
-                            # Create the directory for CSV files if it doesn't exist
-                            csv_dir = "/var/tmp/incubator/tmp_data"
-                            os.makedirs(csv_dir, exist_ok=True)
-                            
-                            # Export the latest data to a CSV file named with the channel number
-                            self.data[channel_index].export_csv(f"{csv_dir}/channel_{channel_index + 1}_data.csv")
-                        else:
-                            print(f"Error: Received out-of-range channel index: {channel_index}")
-
-                except (ValueError, IndexError) as e:
-                    # This will catch errors from float conversion, channel parsing, or list indexing
-                    print(f"An error occurred while processing UART data: {e}")
+                    self.data[self.data_iterator].add_entry(
+                        time=np.datetime64("now", "ms"),
+                        optical_density=processed_od,  # Use the processed value
+                        temperature=None
+                    )
+                    csv_dir = "/var/tmp/incubator/tmp_data"
+                    os.makedirs(csv_dir, exist_ok=True)
+                    self.data[self.data_iterator].export_csv(f"{csv_dir}/channel_{self.data_iterator + 1}_data.csv")
+                except (ValueError, IndexError):
+                    pass
+                finally:
+                    self.data_iterator += 1
+                    if (self.data_iterator >= 50):
+                        self.data_iterator = 0
         self.after(100, self.poll_uart)
 
     def _stop_sequence(self):

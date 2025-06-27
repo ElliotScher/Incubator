@@ -310,11 +310,15 @@ void runReactionState() {
     case REACT_TRANSMIT_DATA:
       Serial1.print("OD:");
       Serial1.println(currentOD);
+      
+      Serial1.print("CHANNEL:");
+      Serial1.println(channelIterator);
 
       channelIterator++;
       if (channelIterator > 50) {
         channelIterator = 1;
       }
+
       if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
       } else {
