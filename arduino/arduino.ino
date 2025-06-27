@@ -313,7 +313,7 @@ void runReactionState() {
 
       channelIterator++;
       if (channelIterator > 50) {
-        channelIterator%=50;
+        channelIterator = 1;
       }
       if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
