@@ -453,31 +453,53 @@ class RunView(tk.Frame):
             elif "RESUME SUCCESSFUL" in line:
                 self.arduino_paused_ack = False
                 self.play_pause_button.config(text="Pause")
-            elif "OD:" in line and not self.arduino_paused_ack:
+            elif "OD:" in line and "CH:" in line and not self.arduino_paused_ack:
                 try:
-                    raw_value = float(line[3:])
+                    # Split the line into parts based on the delimiters "OD:" and "CH:"
+                    # Example line: "OD:1.234CH:5"
+                    parts = line.split("CH:")
+                    od_part = parts[0]  # "OD:1.234"
+                    ch_part = parts[1]  # "5"
+
+                    # Extract the raw float value for Optical Density
+                    raw_value = float(od_part[3:]) # Slice to remove "OD:"
+
+                    # Extract the integer value for the Channel number
+                    channel_number = int(ch_part)
 
                     # Convert the raw value to calibrated OD
                     processed_od = self._convert_raw_to_od(raw_value)
 
-                    self.data[self.data_iterator].add_entry(
-                        time=np.datetime64("now", "ms"),
-                        optical_density=processed_od,  # Use the processed value
-                        temperature=None,
-                    )
-                    csv_dir = "/var/tmp/incubator/tmp_data"
-                    os.makedirs(csv_dir, exist_ok=True)
-                    self.data[self.data_iterator].export_csv(
-                        f"{csv_dir}/channel_{self.data_iterator + 1}_data.csv"
-                    )
-                except (ValueError, IndexError):
+                    # Use the channel_number (adjusting for 0-based index if self.data is a list)
+                    # to access the correct data container. Assuming channel numbers are 1-based.
+                    data_index = channel_number - 1
+
+                    # Ensure the data_index is within the bounds of our data structure
+                    if 0 <= data_index < len(self.data):
+                        # Add the new data entry to the corresponding channel's data object
+                        self.data[data_index].add_entry(
+                            time=np.datetime64("now", "ms"),
+                            optical_density=processed_od,  # Use the processed value
+                            temperature=None, # Assuming temperature is not in this message
+                        )
+
+                        # Create the directory for CSV files if it doesn't exist
+                        csv_dir = "/var/tmp/incubator/tmp_data"
+                        os.makedirs(csv_dir, exist_ok=True)
+
+                        # Export the data to a CSV file named with the correct channel number
+                        self.data[data_index].export_csv(
+                            f"{csv_dir}/channel_{channel_number}_data.csv"
+                        )
+
+                        # Update the plot with the new data
+                        self.update_plot()
+
+                except (ValueError, IndexError) as e:
+                    # This block will catch errors if the line format is unexpected
+                    # or if the number conversions fail.
+                    print(f"Error parsing UART line: '{line}'. Error: {e}")
                     pass
-                finally:
-                    self.data_iterator += 1
-                    if self.data_iterator >= 50:
-                        self.data_iterator = 0
-                    self.update_plot()
-        self.after(100, self.poll_uart)
 
     def _stop_sequence(self):
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")

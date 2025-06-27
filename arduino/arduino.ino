@@ -309,7 +309,9 @@ void runReactionState() {
       break;
     case REACT_TRANSMIT_DATA:
       Serial1.print("OD:");
-      Serial1.println(currentOD);
+      Serial1.print(currentOD);
+      Serial1.print("CH:");
+      Serial1.println(channelIterator)
 
       channelIterator++;
       if (channelIterator > 50) {
