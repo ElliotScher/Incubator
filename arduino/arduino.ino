@@ -311,7 +311,7 @@ void runReactionState() {
       Serial1.print("OD:");
       Serial1.print(currentOD);
       Serial1.print("CH:");
-      Serial1.println(channelIterator)
+      Serial1.println(channelIterator);
 
       channelIterator++;
       if (channelIterator > 50) {

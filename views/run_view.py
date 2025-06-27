@@ -501,6 +501,8 @@ class RunView(tk.Frame):
                     print(f"Error parsing UART line: '{line}'. Error: {e}")
                     pass
 
+        self.after(100, self.poll_uart)
+
     def _stop_sequence(self):
         UARTUtil.send_data(self.ser, "CMD:CANCEL_REACTION")
         temp_dir = tempfile.mkdtemp(prefix="reaction_data_")
