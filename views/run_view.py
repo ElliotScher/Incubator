@@ -389,23 +389,36 @@ class RunView(tk.Frame):
                 self.play_pause_button.config(text="Pause")
             elif "OD:" in line and not self.arduino_paused_ack:
                 try:
-                    raw_value = float(line[3:])
-                    
-                    # Convert the raw value to calibrated OD
-                    processed_od = self._convert_raw_to_od(raw_value)
+                    # Convert the 1-based iterator (1-50) to a 0-based list index (0-49)
+                    current_channel_index = self.data_iterator - 1
 
-                    self.data[self.data_iterator].add_entry(
-                        time=np.datetime64("now", "ms"),
-                        optical_density=processed_od,  # Use the processed value
-                        temperature=None
-                    )
-                    csv_dir = "/var/tmp/incubator/tmp_data"
-                    os.makedirs(csv_dir, exist_ok=True)
-                    self.data[self.data_iterator].export_csv(f"{csv_dir}/channel_{self.data_iterator}_data.csv")
-                    self.data_iterator = (self.data_iterator + 1)
-                    if (self.data_iterator > 50):
-                        self.data_iterator = 1  # Reset to 1 if we exceed the number of channels
-                except (ValueError, IndexError): pass
+                    # Ensure the index is within the valid range before access
+                    if 0 <= current_channel_index < 50:
+                        raw_value = float(line[3:])
+                        
+                        # Convert the raw value to calibrated OD
+                        processed_od = self._convert_raw_to_od(raw_value)
+
+                        # Use the correct, 0-based index to access the data list
+                        self.data[current_channel_index].add_entry(
+                            time=np.datetime64("now", "ms"),
+                            optical_density=processed_od,
+                            temperature=None
+                        )
+                        csv_dir = "/var/tmp/incubator/tmp_data"
+                        os.makedirs(csv_dir, exist_ok=True)
+                        # Use the 1-based iterator for the filename to keep it intuitive
+                        self.data[current_channel_index].export_csv(f"{csv_dir}/channel_{self.data_iterator}_data.csv")
+
+                    # Increment and wrap the iterator for the next channel
+                    self.data_iterator += 1
+                    if self.data_iterator > 50:
+                        self.data_iterator = 1  # Reset to channel 1 for the next cycle
+                        
+                except (ValueError, IndexError) as e:
+                    # Optional: Log the error for better debugging
+                    print(f"Could not process UART line: '{line}'. Error: {e}")
+                    pass
         self.after(100, self.poll_uart)
 
     def _stop_sequence(self):
