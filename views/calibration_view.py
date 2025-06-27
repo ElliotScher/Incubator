@@ -12,6 +12,9 @@ import matplotlib
 matplotlib.use("TkAgg")
 import re
 from collections import defaultdict
+import os
+import csv
+from datetime import datetime
 
 
 class CalibrationView(tk.Frame):
@@ -240,6 +243,11 @@ class CalibrationView(tk.Frame):
                     graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
                         self.calibration_session.run_calibration()
                     )
+
+                      # --- ADD THIS SECTION ---
+                    # Get the calculated parameters and save them
+                    a, b = log.a, log.b
+                    self.save_calibration_to_csv(a, b, r_squared)
 
                     fig, ax = plt.subplots(figsize=(5, 4))
 
@@ -511,3 +519,35 @@ class CalibrationView(tk.Frame):
             variance_str += f"Channel {channel_index}: ADC StDev = {stdev:.3f}\n"
 
         messagebox.showinfo("Calibration Statistics", variance_str)
+
+    def save_calibration_to_csv(self, a, b, r_squared):
+        """
+        Saves the calibration parameters to a CSV file with a timestamp.
+        Deletes the old calibration file if it exists.
+        """
+        filepath = '/tmp/var/incubator/calibrations.csv'
+        try:
+            # Ensure the parent directory exists
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+            # Delete the old calibration file if it exists
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+
+            # Get the current timestamp in a standard format
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # Define the header and the data row
+            header = ['timestamp', 'a', 'b', 'r_squared']
+            data_row = [timestamp, f'{a:.4f}', f'{b:.4f}', f'{r_squared:.4f}']
+
+            # Write the header and data row to the new file
+            with open(filepath, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(header)
+                writer.writerow(data_row)
+
+        except IOError as e:
+            messagebox.showerror("File Save Error", f"Could not save calibration data to {filepath}\n\nError: {e}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An unexpected error occurred while saving the calibration data:\n{e}")

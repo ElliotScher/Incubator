@@ -61,8 +61,8 @@ String reactionStateInputBuffer = "";
 void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
-  stepper.setMaxSpeed(15000);
-  stepper.setAcceleration(15000);
+  stepper.setMaxSpeed(12000);
+  stepper.setAcceleration(12000);
 }
 
 void loop() {

@@ -360,6 +360,15 @@ class RunView(tk.Frame):
         return [self.tree.set(item, "Index") for item in self.tree.get_children() if self.tree.set(item, "Selected") == "[x]"]
 
     def _start_sequence(self):
+        # Load calibration parameters. If it fails, abort the run.
+        if not self._load_latest_calibration():
+            # Revert the UI state because the run failed to start
+            self._running = False
+            self.run_stop_button.config(text="Run", bg="green")
+            self.play_pause_button.config(state="disabled", text="Pause")
+            self.action_button.config(text="Export Final Data", command=self.export_final_data)
+            return
+        
         # Before starting, ensure temp data is clear
         self._clear_temp_data() 
         for rd in self.data: rd.clear()
@@ -380,9 +389,14 @@ class RunView(tk.Frame):
                 self.play_pause_button.config(text="Pause")
             elif "OD:" in line and not self.arduino_paused_ack:
                 try:
+                    raw_value = float(line[3:])
+                    
+                    # Convert the raw value to calibrated OD
+                    processed_od = self._convert_raw_to_od(raw_value)
+
                     self.data[self.data_iterator].add_entry(
                         time=np.datetime64("now", "ms"),
-                        optical_density=float(line[3:]),
+                        optical_density=processed_od,  # Use the processed value
                         temperature=None
                     )
                     csv_dir = "/var/tmp/incubator/tmp_data"
@@ -429,3 +443,58 @@ class RunView(tk.Frame):
         self.ax.set_title("Optical Density vs Time")
         self.ax.set_xlabel("Time"); self.ax.set_ylabel("OD")
         self.ax.legend(); self.ax.grid(True); self.fig.autofmt_xdate(); self.fig.canvas.draw_idle()
+
+    def _load_latest_calibration(self):
+        """
+        Loads 'a' and 'b' parameters from the LAST line of the calibrations CSV.
+        Returns True on success, False on failure.
+        """
+        self.cal_a = None
+        self.cal_b = None
+        filepath = '/tmp/var/incubator/calibrations.csv'
+
+        try:
+            if not os.path.isfile(filepath):
+                messagebox.showerror("Calibration Missing", "Calibration file not found.\nPlease go to the Calibration screen and run a new calibration before starting a reaction.")
+                return False
+
+            with open(filepath, 'r', newline='') as f:
+                # Read all lines to easily access the last one
+                lines = f.readlines()
+                if len(lines) < 2:  # Must have a header row and at least one data row
+                    messagebox.showerror("Invalid Calibration", "Calibration file is empty or invalid.\nPlease run a new calibration.")
+                    return False
+                
+                # The last line contains the latest calibration data
+                last_line = lines[-1].strip()
+                parts = last_line.split(',')
+                
+                # CSV format is: timestamp, a, b, r_squared
+                self.cal_a = float(parts[1])
+                self.cal_b = float(parts[2])
+                print(f"Successfully loaded calibration parameters: a={self.cal_a}, b={self.cal_b}")
+                return True
+
+        except (IOError, IndexError, ValueError) as e:
+            messagebox.showerror("Calibration Error", f"Failed to load or parse calibration data: {e}\nPlease check the calibration file or run a new one.")
+            return False
+
+    def _convert_raw_to_od(self, raw_value):
+        """
+        Converts a raw value from the sensor to Optical Density using the loaded
+        calibration curve: OD = a * log10(raw_value) + b.
+        """
+        if self.cal_a is None or self.cal_b is None:
+            print("Warning: Calibration parameters not loaded. Returning raw value.")
+            return raw_value
+
+        try:
+            # The log function is undefined for non-positive numbers
+            if raw_value <= 0:
+                return np.nan  # Return 'Not a Number' for invalid readings
+
+            # Apply the logarithmic calibration formula
+            return self.cal_a * np.log10(raw_value) + self.cal_b
+        except (ValueError, TypeError) as e:
+            print(f"Error converting raw value '{raw_value}': {e}")
+            return np.nan
