@@ -402,7 +402,7 @@ class RunView(tk.Frame):
                     csv_dir = "/var/tmp/incubator/tmp_data"
                     os.makedirs(csv_dir, exist_ok=True)
                     self.data[self.data_iterator].export_csv(f"{csv_dir}/channel_{self.data_iterator + 1}_data.csv")
-                    self.data_iterator = (self.data_iterator + 1)
+                    self.data_iterator = (self.data_iterator)
                     if (self.data_iterator > 50):
                         self.data_iterator = 1  # Reset to 1 if we exceed the number of channels
                 except (ValueError, IndexError): pass
