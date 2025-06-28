@@ -499,7 +499,6 @@ class CalibrationView(tk.Frame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
         LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
-        return
 
     def save_calibration_to_csv(self, a, b, r_squared):
         """
