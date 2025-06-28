@@ -364,7 +364,6 @@ class CalibrationView(tk.Frame):
                 UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
                 modal.grab_release()
                 modal.destroy()
-                return
 
             cancel_btn = tk.Button(
                 modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10
@@ -399,6 +398,8 @@ class CalibrationView(tk.Frame):
                             pass
 
                     if "CMD:CALIBRATION_FINISHED" in line:
+                        modal.grab_release()
+                        modal.destroy()
                         result_array = []
                         tree_items = list(self.tree.get_children())
                         for idx, number in enumerate(received_numbers):
@@ -421,7 +422,8 @@ class CalibrationView(tk.Frame):
         # Calculate variance per channel for voltage
 
         graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
-                        self.calibration_session.run_calibration())
+            self.calibration_session.run_10_calibrations()
+        )
 
         # Get the calculated parameters and save them
         a, b = log.a, log.b
@@ -438,15 +440,9 @@ class CalibrationView(tk.Frame):
 
         # Draw custom vertical error bars centered on the fit line
         for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-            ax.vlines(
-                x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1
-            )
-            ax.hlines(
-                y_fit - yerr, x - 0.05, x + 0.05, color="red"
-            )  # bottom cap
-            ax.hlines(
-                y_fit + yerr, x - 0.05, x + 0.05, color="red"
-            )  # top cap
+            ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
+            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
+            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
 
         # Plot the fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
@@ -456,9 +452,7 @@ class CalibrationView(tk.Frame):
         ax.legend()
 
         # Annotate with equation and R²
-        equation_text = (
-            f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
-        )
+        equation_text = f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
         plt.text(
             0.10,
             0.10,
@@ -503,14 +497,9 @@ class CalibrationView(tk.Frame):
 
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(
-            side="right", fill="both", expand=True
-        )
-        LogarithmicCalibrationCurve.init(
-            a, b
-        )  # Initialize the curve with log base 10
+        self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+        LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
         return
-
 
     def save_calibration_to_csv(self, a, b, r_squared):
         """
