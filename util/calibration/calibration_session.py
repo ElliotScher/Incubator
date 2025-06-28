@@ -55,7 +55,7 @@ class CalibrationSession:
     
     def run_10_calibrations(self):
         # Run the calibration 10 times and return the results
-        for _ in range(self.cal_data):
+        for _ in range(len(self.cal_data)):
             result = self.run_calibration()
             self.cal_data.append(result)
         

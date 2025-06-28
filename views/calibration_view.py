@@ -417,88 +417,89 @@ class CalibrationView(tk.Frame):
             poll_uart()
             self.wait_window(modal)
 
-            # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
-            # You can process or save results here as needed
-            # Calculate variance per channel for voltage
+        # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
+        # You can process or save results here as needed
+        # Calculate variance per channel for voltage
 
-            graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
-                self.calibration_session.run_10_calibrations()
+        graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
+            self.calibration_session.run_10_calibrations()
+        )
+
+        # Get the calculated parameters and save them
+        a, b = log.a, log.b
+        self.save_calibration_to_csv(a, b, r_squared)
+
+        fig, ax = plt.subplots(figsize=(5, 4))
+
+        # Plot original data points without error bars
+        ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
+
+        # Plot error bars centered on the fit line
+        a, b = log.a, log.b
+        graph_OD_fit = a * np.log10(graph_V) + b
+
+        # Draw custom vertical error bars centered on the fit line
+        for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
+            ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
+            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
+            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
+
+        # Plot the fitted line
+        x_fit = np.linspace(min(graph_V), max(graph_V), 200)
+        y_fit = a * np.log10(x_fit) + b
+        ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
+
+        ax.legend()
+
+        # Annotate with equation and R²
+        equation_text = f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+        plt.text(
+            0.10,
+            0.10,
+            equation_text,
+            transform=plt.gca().transAxes,
+            fontsize=10,
+            verticalalignment="bottom",
+            bbox=dict(facecolor="white", alpha=0.7),
+        )
+
+        for i, label in enumerate(graph_channels):
+            voltage = graph_V[i]
+            od = graph_OD[i]
+            annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
+            ax.annotate(
+                annotation,
+                (voltage, od),
+                textcoords="offset points",
+                xytext=(10, 10),
+                ha="left",
+                fontsize=8,
+                bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3),
             )
 
-            # Get the calculated parameters and save them
-            a, b = log.a, log.b
-            self.save_calibration_to_csv(a, b, r_squared)
-
-            fig, ax = plt.subplots(figsize=(5, 4))
-
-            # Plot original data points without error bars
-            ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
-
-            # Plot error bars centered on the fit line
-            a, b = log.a, log.b
-            graph_OD_fit = a * np.log10(graph_V) + b
-
-            # Draw custom vertical error bars centered on the fit line
-            for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-                ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
-                ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
-                ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
-
-            # Plot the fitted line
-            x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-            y_fit = a * np.log10(x_fit) + b
-            ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
-
-            ax.legend()
-
-            # Annotate with equation and R²
-            equation_text = f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
-            plt.text(
-                0.10,
-                0.10,
-                equation_text,
-                transform=plt.gca().transAxes,
+        for i, label in enumerate(graph_channels):
+            ax.annotate(
+                str(label),
+                (graph_V[i], graph_OD[i]),
+                textcoords="offset points",
+                xytext=(5, 5),
+                ha="left",
                 fontsize=10,
-                verticalalignment="bottom",
-                bbox=dict(facecolor="white", alpha=0.7),
             )
 
-            for i, label in enumerate(graph_channels):
-                voltage = graph_V[i]
-                od = graph_OD[i]
-                annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
-                ax.annotate(
-                    annotation,
-                    (voltage, od),
-                    textcoords="offset points",
-                    xytext=(10, 10),
-                    ha="left",
-                    fontsize=8,
-                    bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3),
-                )
+        ax.set_xlabel("Voltage")
+        ax.set_ylabel("Optical Density")
+        ax.set_title("Calibration: Voltage vs Optical Density")
+        ax.grid(True)
 
-            for i, label in enumerate(graph_channels):
-                ax.annotate(
-                    str(label),
-                    (graph_V[i], graph_OD[i]),
-                    textcoords="offset points",
-                    xytext=(5, 5),
-                    ha="left",
-                    fontsize=10,
-                )
+        if self.canvas is not None:
+            self.canvas.get_tk_widget().destroy()
 
-            ax.set_xlabel("Voltage")
-            ax.set_ylabel("Optical Density")
-            ax.set_title("Calibration: Voltage vs Optical Density")
-            ax.grid(True)
-
-            if self.canvas is not None:
-                self.canvas.get_tk_widget().destroy()
-
-            self.canvas = FigureCanvasTkAgg(fig, master=self)
-            self.canvas.draw()
-            self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
-            LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
+        self.canvas = FigureCanvasTkAgg(fig, master=self)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+        LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
+        return
 
     def save_calibration_to_csv(self, a, b, r_squared):
         """
