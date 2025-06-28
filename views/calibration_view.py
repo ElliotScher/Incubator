@@ -64,19 +64,9 @@ class CalibrationView(tk.Frame):
         button_frame = tk.Frame(self)
         button_frame.pack(side="top", anchor="e", pady=10)
 
-        run_button = tk.Button(
-            button_frame,
-            text="Run Calibration",
-            command=self.run_calibration,
-            font=("Arial", 12),
-            width=16,
-            height=2,
-        )
-        run_button.pack(side="left", padx=5)
-
         run_10_button = tk.Button(
             button_frame,
-            text="Run 10 Calibrations",
+            text="Run Calibration",
             command=self.run_10_calibrations,
             font=("Arial", 12),
             width=16,
@@ -165,178 +155,6 @@ class CalibrationView(tk.Frame):
             return 0 <= num <= 100
         except ValueError:
             return False
-
-    def run_calibration(self):
-        modal = tk.Toplevel(self)
-        modal.title("Calibration Running")
-        modal.geometry("300x150")
-        modal.resizable(False, False)
-
-        label = tk.Label(
-            modal,
-            text="Calibration is running...\nPlease wait or cancel.",
-            font=("Arial", 12),
-        )
-        label.pack(pady=20)
-
-        received_numbers = []
-
-        def on_cancel():
-            UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
-            modal.grab_release()
-            modal.destroy()
-
-        cancel_btn = tk.Button(
-            modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10
-        )
-        cancel_btn.pack(pady=10)
-
-        modal.protocol("WM_DELETE_WINDOW", lambda: None)
-        modal.transient(self)
-        modal.grab_set()
-        modal.focus_set()
-
-        UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
-        data = []
-        for item in self.tree.get_children():
-            od = self.tree.item(item, "values")[1]
-            data.append([od])
-
-        self.calibration_session = CalibrationSession(data)
-        populated_count = sum(1 for row in data if row[0].strip() != "")
-        UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
-
-        def poll_uart():
-            line = UARTUtil.receive_data(self.ser)
-            if line:
-                line = line.strip()
-                # Check for "OD:" prefix and extract the number
-                if "OD:" in line:
-                    print("Received line:", line, "\n\n\n\n\n")
-                    try:
-                        number_str = line[3:]  # Everything after "OD:"
-                        number = float(number_str)
-                        received_numbers.append(number)
-                    except ValueError:
-                        pass  # Ignore malformed numbers
-
-                # Check for calibration finished message
-                if "CMD:CALIBRATION_FINISHED" in line:
-                    print("Calibration finished! Numbers received:", received_numbers)
-                    modal.grab_release()
-                    modal.destroy()
-
-                    # Create a 2D array: [channel_index, OD, received_number]
-                    result_array = []
-                    tree_items = list(self.tree.get_children())
-                    for idx, number in enumerate(received_numbers):
-                        if idx < len(tree_items):
-                            channel_index = int(
-                                self.tree.item(tree_items[idx], "values")[0]
-                            )
-                            od = float(self.tree.item(tree_items[idx], "values")[1])
-                            result_array.append([channel_index, float(number), od])
-                    print("Result array:", result_array)
-
-                    self.calibration_session = CalibrationSession(result_array)
-
-                    graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
-                        self.calibration_session.run_calibration()
-                    )
-
-                    # --- ADD THIS SECTION ---
-                    # Get the calculated parameters and save them
-                    a, b = log.a, log.b
-                    self.save_calibration_to_csv(a, b, r_squared)
-
-                    fig, ax = plt.subplots(figsize=(5, 4))
-
-                    # Plot original data points without error bars
-                    ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
-
-                    # Plot error bars centered on the fit line
-                    a, b = log.a, log.b
-                    graph_OD_fit = a * np.log10(graph_V) + b
-
-                    # Draw custom vertical error bars centered on the fit line
-                    for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-                        ax.vlines(
-                            x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1
-                        )
-                        ax.hlines(
-                            y_fit - yerr, x - 0.05, x + 0.05, color="red"
-                        )  # bottom cap
-                        ax.hlines(
-                            y_fit + yerr, x - 0.05, x + 0.05, color="red"
-                        )  # top cap
-
-                    # Plot the fitted line
-                    x_fit = np.linspace(min(graph_V), max(graph_V), 200)
-                    y_fit = a * np.log10(x_fit) + b
-                    ax.plot(x_fit, y_fit, color="green", label="Fit: a*log(V)+b")
-
-                    ax.legend()
-
-                    # Annotate with equation and R²
-                    equation_text = (
-                        f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
-                    )
-                    plt.text(
-                        0.10,
-                        0.10,
-                        equation_text,
-                        transform=plt.gca().transAxes,
-                        fontsize=10,
-                        verticalalignment="bottom",
-                        bbox=dict(facecolor="white", alpha=0.7),
-                    )
-
-                    for i, label in enumerate(graph_channels):
-                        voltage = graph_V[i]
-                        od = graph_OD[i]
-                        annotation = f"Ch:{label}\nV:{voltage:.2f}\nOD:{od:.2f}"
-                        ax.annotate(
-                            annotation,
-                            (voltage, od),
-                            textcoords="offset points",
-                            xytext=(10, 10),
-                            ha="left",
-                            fontsize=8,
-                            bbox=dict(boxstyle="round,pad=0.2", fc="yellow", alpha=0.3),
-                        )
-
-                    for i, label in enumerate(graph_channels):
-                        ax.annotate(
-                            str(label),
-                            (graph_V[i], graph_OD[i]),
-                            textcoords="offset points",
-                            xytext=(5, 5),
-                            ha="left",
-                            fontsize=10,
-                        )
-
-                    ax.set_xlabel("Voltage")
-                    ax.set_ylabel("Optical Density")
-                    ax.set_title("Calibration: Voltage vs Optical Density")
-                    ax.grid(True)
-
-                    if self.canvas is not None:
-                        self.canvas.get_tk_widget().destroy()
-
-                    self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.draw()
-                    self.canvas.get_tk_widget().pack(
-                        side="right", fill="both", expand=True
-                    )
-                    LogarithmicCalibrationCurve.init(
-                        a, b
-                    )  # Initialize the curve with log base 10
-                    return
-
-            # Poll again after 100 ms
-            modal.after(100, poll_uart)
-
-        poll_uart()
 
     def run_10_calibrations(self):
         results = []
@@ -440,11 +258,11 @@ class CalibrationView(tk.Frame):
         graph_OD_fit = a * np.log10(graph_V) + b
 
         
-        # Draw custom vertical error bars centered on the fit line
+        # Draw custom horizontal error bars centered on the fit line
         for x, y_fit, xerr in zip(graph_V, graph_OD_fit, error_bars):
             ax.hlines(y_fit, x - xerr, x + xerr, color="red", linewidth=1)
-            ax.vlines(y_fit - xerr, x - 0.25, x + 0.25, color="red")
-            ax.vlines(y_fit + xerr, x - 0.25, x + 0.25, color="red")
+            ax.vlines(x - xerr, y_fit - 0.05, y_fit + 0.05, color="red")  # left cap
+            ax.vlines(x + xerr, y_fit - 0.05, y_fit + 0.05, color="red")  # right cap
 
         # Plot the fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
