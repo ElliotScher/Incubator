@@ -49,6 +49,36 @@ class CalibrationSession:
         # Return residuals or absolute residuals as error bars
         return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
     
+    def run_calibration(self, data):
+        # Flatten the matrix into x and y arrays
+        channels = []
+        x = []
+        y = []
+
+        for row in data:
+            if (row[1] != 0 and row[1] is not None):
+                channels.append(row[0])
+                x.append(row[1])
+                y.append(row[2])
+
+        x = np.array(x)
+        y = np.array(y)
+
+        params, _ = curve_fit(LogFunction.log_func, x, y)
+        a, b = params
+
+        # Compute R^2
+        y_pred = LogFunction.log_func(x, a, b)
+        residuals = y - y_pred  # These are signed residuals
+        abs_residuals = np.abs(residuals)  # absolute residuals for error bars
+
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((y - np.mean(y))**2)
+        r_squared = 1 - (ss_res / ss_tot)
+
+        # Return residuals or absolute residuals as error bars
+        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
+    
     def run_10_calibrations(self, data):
         """
         Runs 10 calibrations and returns the average of the results.
