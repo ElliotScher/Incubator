@@ -381,7 +381,6 @@ class CalibrationView(tk.Frame):
                 od = self.tree.item(item, "values")[1]
                 data.append([od])
 
-            self.calibration_session = CalibrationSession(data)
             populated_count = sum(1 for row in data if row[0].strip() != "")
             UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
 
@@ -410,7 +409,6 @@ class CalibrationView(tk.Frame):
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
                                 result_array.append([channel_index, float(number), od])
                         results.append(result_array)
-                        self.calibration_session.add_calibration_data(channel_index, float(number), od)
                         return
 
                 modal.after(100, poll_uart)
@@ -421,6 +419,8 @@ class CalibrationView(tk.Frame):
         # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
         # You can process or save results here as needed
         # Calculate variance per channel for voltage
+
+        self.calibration_session = CalibrationSession(results)
 
         graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
             self.calibration_session.run_10_calibrations(results)

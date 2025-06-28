@@ -56,9 +56,9 @@ class CalibrationSession:
         :return: The average of the results.
         """
         results = []
-        for _ in range(len(data)):
+        for i in range(len(data)):
             self.data = data
-            result = self.run_calibration()
+            result = self.run_calibration(data[i])
             results.append(result)
         
         # Average the results
