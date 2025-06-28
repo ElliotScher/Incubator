@@ -105,12 +105,10 @@ class CalibrationSession:
         adcs = []
         standard_deviations = []
 
-        for i in range(len(results)):
-            for j in range(len(results[i][2])):
-                    adcs.append(results[i][2][j])
+        for j in range(4):
+            for i in range(len(results)):
+                adcs.append(results[i][1][j])
             standard_deviations.append(statistics.stdev(adcs))
-            adcs = []
-
 
         return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, standard_deviations
     
