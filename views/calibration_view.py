@@ -338,12 +338,94 @@ class CalibrationView(tk.Frame):
 
         poll_uart()
 
-    def run_calibration_from_json(self):
-        self.calibration_session = CalibrationSession(None)
+    def run_10_calibrations(self):
+        results = []
+        for _ in range(10):
+            modal = tk.Toplevel(self)
+            modal.title("Calibration Running")
+            modal.geometry("350x200")
+            modal.resizable(False, False)
+
+            run_label = tk.Label(
+                modal, text=f"Run {_ + 1} of 10", font=("Arial", 12, "bold")
+            )
+            run_label.pack(pady=(10, 0))
+
+            label = tk.Label(
+                modal,
+                text="Calibration is running...\nPlease wait or cancel.",
+                font=("Arial", 12),
+            )
+            label.pack(pady=10)
+
+            received_numbers = []
+
+            def on_cancel():
+                UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
+                modal.grab_release()
+                modal.destroy()
+                return
+
+            cancel_btn = tk.Button(
+                modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10
+            )
+            cancel_btn.pack(pady=10)
+
+            modal.protocol("WM_DELETE_WINDOW", lambda: None)
+            modal.transient(self)
+            modal.grab_set()
+            modal.focus_set()
+
+            UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
+            data = []
+            for item in self.tree.get_children():
+                od = self.tree.item(item, "values")[1]
+                data.append([od])
+
+            self.calibration_session = CalibrationSession(data)
+            populated_count = sum(1 for row in data if row[0].strip() != "")
+            UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
+
+            def poll_uart():
+                line = UARTUtil.receive_data(self.ser)
+                if line:
+                    line = line.strip()
+                    if "OD:" in line:
+                        try:
+                            number_str = line[3:]
+                            number = float(number_str)
+                            received_numbers.append(number)
+                        except ValueError:
+                            pass
+
+                    if "CMD:CALIBRATION_FINISHED" in line:
+                        result_array = []
+                        tree_items = list(self.tree.get_children())
+                        for idx, number in enumerate(received_numbers):
+                            if idx < len(tree_items):
+                                channel_index = int(
+                                    self.tree.item(tree_items[idx], "values")[0]
+                                )
+                                od = float(self.tree.item(tree_items[idx], "values")[1])
+                                result_array.append([channel_index, float(number), od])
+                        results.append(result_array)
+                        return
+
+                modal.after(100, poll_uart)
+
+            poll_uart()
+            self.wait_window(modal)
+
+        # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
+        # You can process or save results here as needed
+        # Calculate variance per channel for voltage
 
         graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
-            self.calibration_session.run_test_json_calibration()
-        )
+                        self.calibration_session.run_calibration())
+
+        # Get the calculated parameters and save them
+        a, b = log.a, log.b
+        self.save_calibration_to_csv(a, b, r_squared)
 
         fig, ax = plt.subplots(figsize=(5, 4))
 
@@ -356,9 +438,15 @@ class CalibrationView(tk.Frame):
 
         # Draw custom vertical error bars centered on the fit line
         for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-            ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
-            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
-            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
+            ax.vlines(
+                x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1
+            )
+            ax.hlines(
+                y_fit - yerr, x - 0.05, x + 0.05, color="red"
+            )  # bottom cap
+            ax.hlines(
+                y_fit + yerr, x - 0.05, x + 0.05, color="red"
+            )  # top cap
 
         # Plot the fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
@@ -368,7 +456,9 @@ class CalibrationView(tk.Frame):
         ax.legend()
 
         # Annotate with equation and R²
-        equation_text = f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+        equation_text = (
+            f"y = {a:.3f}log(x) + {b:.3f}\n$R^2$ = {r_squared:.4f}"
+        )
         plt.text(
             0.10,
             0.10,
@@ -413,112 +503,14 @@ class CalibrationView(tk.Frame):
 
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
+        self.canvas.get_tk_widget().pack(
+            side="right", fill="both", expand=True
+        )
+        LogarithmicCalibrationCurve.init(
+            a, b
+        )  # Initialize the curve with log base 10
+        return
 
-    def run_10_calibrations(self):
-        results = []
-        for _ in range(10):
-            modal = tk.Toplevel(self)
-            modal.title("Calibration Running")
-            modal.geometry("350x200")
-            modal.resizable(False, False)
-
-            run_label = tk.Label(
-                modal, text=f"Run {_ + 1} of 10", font=("Arial", 12, "bold")
-            )
-            run_label.pack(pady=(10, 0))
-
-            # stdev_label = tk.Label(modal, text=f"Current StDev: {last_stdev}", font=("Arial", 11))
-            # stdev_label.pack(pady=(0, 10))
-
-            # avg_label = tk.Label(modal, text=f"Current Mean: {last_avg}", font=("Arial", 11))
-            # avg_label.pack(pady=(0, 10))
-
-            label = tk.Label(
-                modal,
-                text="Calibration is running...\nPlease wait or cancel.",
-                font=("Arial", 12),
-            )
-            label.pack(pady=10)
-
-            received_numbers = []
-
-            def on_cancel():
-                UARTUtil.send_data(self.ser, "CMD:CANCEL_CALIBRATION")
-                modal.grab_release()
-                modal.destroy()
-
-            cancel_btn = tk.Button(
-                modal, text="Cancel", command=on_cancel, font=("Arial", 12), width=10
-            )
-            cancel_btn.pack(pady=10)
-
-            modal.protocol("WM_DELETE_WINDOW", lambda: None)
-            modal.transient(self)
-            modal.grab_set()
-            modal.focus_set()
-
-            UARTUtil.send_data(self.ser, "CMD:CALIBRATE")
-            data = []
-            for item in self.tree.get_children():
-                od = self.tree.item(item, "values")[1]
-                data.append([od])
-
-            self.calibration_session = CalibrationSession(data)
-            populated_count = sum(1 for row in data if row[0].strip() != "")
-            UARTUtil.send_data(self.ser, "CHANNELS:" + str(populated_count))
-
-            def poll_uart():
-                line = UARTUtil.receive_data(self.ser)
-                if line:
-                    line = line.strip()
-                    if "OD:" in line:
-                        try:
-                            number_str = line[3:]
-                            number = float(number_str)
-                            received_numbers.append(number)
-                        except ValueError:
-                            pass
-
-                    if "CMD:CALIBRATION_FINISHED" in line:
-                        modal.grab_release()
-                        modal.destroy()
-                        result_array = []
-                        tree_items = list(self.tree.get_children())
-                        for idx, number in enumerate(received_numbers):
-                            if idx < len(tree_items):
-                                channel_index = int(
-                                    self.tree.item(tree_items[idx], "values")[0]
-                                )
-                                od = float(self.tree.item(tree_items[idx], "values")[1])
-                                result_array.append([channel_index, float(number), od])
-                        results.append(result_array)
-                        return
-
-                modal.after(100, poll_uart)
-
-            poll_uart()
-            self.wait_window(modal)
-
-        # After all calibrations, results is a list of 10 runs, each with [channel_index, voltage, od]
-        # You can process or save results here as needed
-        # Calculate variance per channel for voltage
-
-        channel_voltages = defaultdict(list)
-        for run in results:
-            for channel_index, voltage, od in run:
-                channel_voltages[channel_index].append(voltage)
-
-        variance_str = ""
-        for channel_index in sorted(channel_voltages.keys()):
-            voltages = channel_voltages[channel_index]
-            if len(voltages) > 1:
-                stdev = statistics.stdev(voltages)
-            else:
-                stdev = 0.0
-            variance_str += f"Channel {channel_index}: ADC StDev = {stdev:.3f}\n"
-
-        messagebox.showinfo("Calibration Statistics", variance_str)
 
     def save_calibration_to_csv(self, a, b, r_squared):
         """

@@ -462,7 +462,7 @@ class RunView(tk.Frame):
                     ch_part = parts[1]  # "5"
 
                     # Extract the raw float value for Optical Density
-                    raw_value = float(od_part[3:]) # Slice to remove "OD:"
+                    raw_value = float(od_part[3:])  # Slice to remove "OD:"
 
                     # Extract the integer value for the Channel number
                     channel_number = int(ch_part)
@@ -480,7 +480,7 @@ class RunView(tk.Frame):
                         self.data[data_index].add_entry(
                             time=np.datetime64("now", "ms"),
                             optical_density=processed_od,  # Use the processed value
-                            temperature=None, # Assuming temperature is not in this message
+                            temperature=None,  # Assuming temperature is not in this message
                         )
 
                         # Create the directory for CSV files if it doesn't exist

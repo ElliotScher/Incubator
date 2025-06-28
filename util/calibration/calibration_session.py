@@ -48,43 +48,26 @@ class CalibrationSession:
 
         # Return residuals or absolute residuals as error bars
         return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
-
-    @staticmethod        
-    def run_test_json_calibration():
-        try:
-            base_path = sys._MEIPASS  # PyInstaller sets this at runtime
-        except AttributeError:
-            base_path = os.path.abspath(".")
-
-        path = os.path.join(base_path, 'util/calibration/test_calibration.json')
-        with open(path, 'r') as f:
-            obj = json.load(f)
-        matrix = obj.get("matrix")
-
-        channels = []
-        x = []
-        y = []
+    
+    def run_10_calibrations(self):
+        # Run the calibration 10 times and return the results
+        results = []
+        for _ in range(10):
+            result = self.run_calibration()
+            results.append(result)
         
-        for row in matrix:
-            if (row[1] != 0 and row[1] is not None):
-                channels.append(row[0])
-                x.append(row[1])
-                y.append(row[2])
+        # Aggregate the results
+        channels = results[0][0]
+        x = np.array([result[1] for result in results])
+        y = np.array([result[2] for result in results])
+        log_func_params = [result[3] for result in results]
+        r_squared_values = [result[4] for result in results]
+        error_bars = np.array([result[5] for result in results])
 
-        x = np.array(x)
-        y = np.array(y)
+        # Average the parameters and R^2 values
+        avg_a = np.mean([log_func.a for log_func in log_func_params])
+        avg_b = np.mean([log_func.b for log_func in log_func_params])
+        avg_r_squared = np.mean(r_squared_values)
 
-        params, _ = curve_fit(LogFunction.log_func, x, y)
-        a, b = params
-
-        # Compute R^2
-        y_pred = LogFunction.log_func(x, a, b)
-        residuals = y - y_pred  # These are signed residuals
-        abs_residuals = np.abs(residuals)  # absolute residuals for error bars
-
-        ss_res = np.sum(residuals**2)
-        ss_tot = np.sum((y - np.mean(y))**2)
-        r_squared = 1 - (ss_res / ss_tot)
-
-        # Return residuals or absolute residuals as error bars
-        return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
+        # Return aggregated results
+        return channels, x.tolist(), y.tolist(), LogFunction(avg_a, avg_b), avg_r_squared, error_bars.tolist()
