@@ -410,7 +410,7 @@ class CalibrationView(tk.Frame):
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
                                 result_array.append([channel_index, float(number), od])
                         results.append(result_array)
-                        self.calibration_session.add_calibration_data(result_array)
+                        self.calibration_session.add_calibration_data(channel_index, float(number), od)
                         return
 
                 modal.after(100, poll_uart)
