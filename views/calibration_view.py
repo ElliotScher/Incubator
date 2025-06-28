@@ -423,7 +423,7 @@ class CalibrationView(tk.Frame):
         # Calculate variance per channel for voltage
 
         graph_channels, graph_V, graph_OD, log, r_squared, error_bars = (
-            self.calibration_session.run_10_calibrations()
+            self.calibration_session.run_10_calibrations(results)
         )
 
         # Get the calculated parameters and save them

@@ -18,7 +18,6 @@ class CalibrationSession:
         # This is a 2d array of cells. The inner arrays are arrays of 3 elements,
         # representing the machine channel, the voltage measurement, and the optical density measurement.
         self.data = table
-        self.cal_data = []
 
     def run_calibration(self):
         # Flatten the matrix into x and y arrays
@@ -50,27 +49,25 @@ class CalibrationSession:
         # Return residuals or absolute residuals as error bars
         return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
     
-    def add_calibration_data(self, channel, voltage, optical_density):
-        self.cal_data.append([channel, voltage, optical_density])
-    
-    def run_10_calibrations(self):
-        # Run the calibration 10 times and return the results
-        for _ in range(len(self.cal_data)):
+    def run_10_calibrations(self, data):
+        """
+        Runs 10 calibrations and returns the average of the results.
+        :param data: The calibration data to run.
+        :return: The average of the results.
+        """
+        results = []
+        for _ in range(len(data)):
+            self.data = data
             result = self.run_calibration()
-            self.cal_data.append(result)
+            results.append(result)
         
-        # Aggregate the self.cal_data
-        channels = self.cal_data[0][0]
-        x = np.array([result[1] for result in self.cal_data])
-        y = np.array([result[2] for result in self.cal_data])
-        log_func_params = [result[3] for result in self.cal_data]
-        r_squared_values = [result[4] for result in self.cal_data]
-        error_bars = np.array([result[5] for result in self.cal_data])
+        # Average the results
+        avg_channels = results[0][0]
+        avg_x = np.mean([result[1] for result in results], axis=0).tolist()
+        avg_y = np.mean([result[2] for result in results], axis=0).tolist()
+        avg_log_func = LogFunction(np.mean([result[3].a for result in results]), 
+                                   np.mean([result[3].b for result in results]))
+        avg_r_squared = np.mean([result[4] for result in results])
+        avg_error_bars = np.mean([result[5] for result in results], axis=0).tolist()
 
-        # Average the parameters and R^2 values
-        avg_a = np.mean([log_func.a for log_func in log_func_params])
-        avg_b = np.mean([log_func.b for log_func in log_func_params])
-        avg_r_squared = np.mean(r_squared_values)
-
-        # Return aggregated self.cal_data
-        return channels, x.tolist(), y.tolist(), LogFunction(avg_a, avg_b), avg_r_squared, error_bars.tolist()
+        return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, avg_error_bars
