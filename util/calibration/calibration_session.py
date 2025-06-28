@@ -81,44 +81,42 @@ class CalibrationSession:
         return channels, x.tolist(), y.tolist(), LogFunction(a, b), r_squared, abs_residuals.tolist()
     
     def run_10_calibrations(self, data):
-        """
-        Runs 10 calibrations and returns the average of the results.
-        :param data: The calibration data to run.
-        :return: The average of the results.
-        """
-        results = []
-        for i in range(len(data)):
-            self.data = data
-            result = self.run_calibration(data[i])
-            results.append(result)
-        
-        # Average the results
-        avg_channels = results[0][0]
-        avg_x = np.mean([result[1] for result in results], axis=0).tolist()
-        avg_y = np.mean([result[2] for result in results], axis=0).tolist()
-        avg_log_func = LogFunction(np.mean([result[3].a for result in results]), 
-                                   np.mean([result[3].b for result in results]))
-        avg_r_squared = np.mean([result[4] for result in results])
-        avg_error_bars = np.mean([result[5] for result in results], axis=0).tolist()
+            """
+            Processes data from 10 calibration runs.
 
+            This function should:
+            1. Calculate the average voltage (x) and average optical density (y) for each data point across the 10 runs.
+            2. Perform a single curve fit on these averaged data points.
+            3. Calculate the standard deviation of the voltage measurements for each data point across the 10 runs to be used as error bars.
 
-        adcs = []
-        standard_deviations = []
+            :param data: A list of 10 runs. Each run is a list of [channel, voltage, OD] points.
+            :return: Averaged channels, averaged voltages, averaged ODs, the fitted curve function, R^2, and the calculated standard deviations for the voltages.
+            """
+            # Ensure the data is in a consistent format (numpy array is best)
+            # Shape will be (10_runs, num_points_per_run, 3_columns)
+            data_np = np.array(data)
 
-        for j in range(4):
-            for i in range(len(results)):
-                adcs.append(results[i][1][j])
-            standard_deviations.append(statistics.stdev(adcs))
+            # 1. Calculate Averages and Standard Deviations across the 10 runs
+            # axis=0 averages along the "runs" dimension
+            avg_voltages = np.mean(data_np[:, :, 1], axis=0)  # Average of Voltage (column 1)
+            avg_ods = np.mean(data_np[:, :, 2], axis=0)       # Average of Optical Density (column 2)
+            
+            # This is the correct way to calculate the error bars for your horizontal (voltage) axis
+            std_dev_voltages = np.std(data_np[:, :, 1], axis=0, ddof=1) # Use ddof=1 for sample stdev
 
-        return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, standard_deviations
-    
+            # The channels should be the same for each run
+            channels = data_np[0, :, 0].tolist()
 
+            # 2. Perform a single curve fit on the averaged data
+            params, _ = curve_fit(LogFunction.log_func, avg_voltages, avg_ods)
+            a, b = params
+            log_fit = LogFunction(a, b)
 
-    # result
-        # channels, x, y, log, r_squared, error_bars = self.run_calibration()
-            # channels: list of machine channels
-            # x: list of voltage measurements
-            # y: list of optical density measurements
-            # log: LogFunction object with a and b parameters
-            # r_squared: R^2 value of the fit
-            # error_bars: list of absolute residuals for error bars
+            # 3. Compute R^2 for the fit on the averaged data
+            y_pred = LogFunction.log_func(avg_voltages, a, b)
+            ss_res = np.sum((avg_ods - y_pred)**2)
+            ss_tot = np.sum((avg_ods - np.mean(avg_ods))**2)
+            r_squared = 1 - (ss_res / ss_tot)
+
+            # 4. Return the results
+            return channels, avg_voltages.tolist(), avg_ods.tolist(), log_fit, r_squared, std_dev_voltages.tolist()
