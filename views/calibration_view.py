@@ -435,15 +435,15 @@ class CalibrationView(tk.Frame):
         # Plot original data points without error bars
         ax.plot(graph_V, graph_OD, "o", color="blue", label="Measured OD")
 
-        # Plot error bars centered on the fit line
+        # Plot horizontal error bars centered on the fit line
         a, b = log.a, log.b
         graph_OD_fit = a * np.log10(graph_V) + b
 
-        # Draw custom vertical error bars centered on the fit line
-        for x, y_fit, yerr in zip(graph_V, graph_OD_fit, error_bars):
-            ax.vlines(x, y_fit - yerr, y_fit + yerr, color="red", linewidth=1)
-            ax.hlines(y_fit - yerr, x - 0.05, x + 0.05, color="red")  # bottom cap
-            ax.hlines(y_fit + yerr, x - 0.05, x + 0.05, color="red")  # top cap
+        # Draw custom horizontal error bars centered on the fit line
+        for x, y_fit, xerr in zip(graph_V, graph_OD_fit, error_bars):
+            ax.hlines(y_fit, x - xerr, x + xerr, color="red", linewidth=1)
+            ax.vlines(x - xerr, y_fit - 0.05, y_fit + 0.05, color="red")  # left cap
+            ax.vlines(x + xerr, y_fit - 0.05, y_fit + 0.05, color="red")  # right cap
 
         # Plot the fitted line
         x_fit = np.linspace(min(graph_V), max(graph_V), 200)
