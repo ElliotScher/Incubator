@@ -106,11 +106,21 @@ class CalibrationSession:
         standard_deviations = []
 
         for i in range(len(results)):
-            for j in range(len(results[i])):
-                for k in range(len(results[i][j][2])):
-                    adcs.append(results[i][j][k])
+            for j in range(len(results[i][2])):
+                    adcs.append(results[i][2][j])
             standard_deviations.append(statistics.stdev(adcs))
             adcs = []
 
 
         return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, standard_deviations
+    
+
+
+    # result
+        # channels, x, y, log, r_squared, error_bars = self.run_calibration()
+            # channels: list of machine channels
+            # x: list of voltage measurements
+            # y: list of optical density measurements
+            # log: LogFunction object with a and b parameters
+            # r_squared: R^2 value of the fit
+            # error_bars: list of absolute residuals for error bars
