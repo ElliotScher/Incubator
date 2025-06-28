@@ -3,7 +3,6 @@ import os
 import sys
 import numpy as np
 from scipy.optimize import curve_fit
-import statistics
 
 class LogFunction:
     def __init__(self, a, b):
@@ -101,15 +100,4 @@ class CalibrationSession:
         avg_r_squared = np.mean([result[4] for result in results])
         avg_error_bars = np.mean([result[5] for result in results], axis=0).tolist()
 
-
-        adcs = []
-        standard_deviations = []
-
-        for i in range(len(data)):
-            for j in range(len(data[i])):
-                adcs.append(data[i][j][1])
-            standard_deviations.append(statistics.stdev(adcs))
-            adcs = []
-
-
-        return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, standard_deviations
+        return avg_channels, avg_x, avg_y, avg_log_func, avg_r_squared, avg_error_bars
