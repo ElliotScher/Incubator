@@ -107,7 +107,8 @@ class CalibrationSession:
 
         for i in range(len(results)):
             for j in range(len(results[i])):
-                adcs.append(results[i][j][1])
+                for k in range(len(results[i][j][2])):
+                    adcs.append(results[i][j][k])
             standard_deviations.append(statistics.stdev(adcs))
             adcs = []
 
