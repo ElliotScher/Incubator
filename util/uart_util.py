@@ -3,7 +3,7 @@ import time
 
 class UARTUtil:
     @staticmethod
-    def open_port(port='/dev/ttyUSB0', baudrate=9600, timeout=1):
+    def open_port(port='/dev/ttyACM0', baudrate=9600, timeout=1):
         return serial.Serial(port, baudrate, timeout=timeout)
 
     @staticmethod

@@ -60,7 +60,6 @@ String reactionStateInputBuffer = "";
 
 void setup() {
   Serial.begin(9600);
-  Serial1.begin(9600);
   stepper.setMaxSpeed(12000);
   stepper.setAcceleration(12000);
 }
@@ -86,8 +85,8 @@ void loop() {
 }
 
 void checkSuperStateSerial() {
-  while (Serial1.available()) {
-    char c = Serial1.read();
+  while (Serial.available()) {
+    char c = Serial.read();
 
     if (c == '\n') {
       superStateInputBuffer.trim();
@@ -104,10 +103,10 @@ void checkSuperStateSerial() {
         currentState = IDLE;
       } else if (superStateInputBuffer == "CMD:PLAY_REACTION" || superStateInputBuffer == "CMD:RESUME_REACTION") {
         currentState = RUN_REACTION;
-        Serial1.println("RESUME SUCCESSFUL");
+        Serial.println("RESUME SUCCESSFUL");
         paused = false;
       } else {
-        Serial1.println("ERR:UNKNOWN_COMMAND");
+        Serial.println("ERR:UNKNOWN_COMMAND");
       }
 
       superStateInputBuffer = ""; // Clear buffer for next command
@@ -120,31 +119,26 @@ void checkSuperStateSerial() {
 void runIdleState() {
   checkSuperStateSerial();
   if (paused && !previousPaused) {
-    Serial1.println("PAUSE SUCCESSFUL");
+    Serial.println("PAUSE SUCCESSFUL");
   }
-
-//  Serial.println(paused);
-
   previousPaused = paused;
 }
 
 void runTestConnectionState() {
-  Serial1.write("p");
-  Serial1.write("i");
-  Serial1.write("n");
-  Serial1.write("g");
-  Serial1.write("\n");
+  Serial.write("p");
+  Serial.write("i");
+  Serial.write("n");
+  Serial.write("g");
+  Serial.write("\n");
   currentState = IDLE;
 }
 
 void checkCalibrationStateSerial() {
-  while (Serial1.available()) {
-    char c = Serial1.read();
+  while (Serial.available()) {
+    char c = Serial.read();
 
     if (c == '\n') {
       calibrationStateInputBuffer.trim();  // Trim any extra whitespace
-
-//      Serial.println(calibrationStateInputBuffer);
 
       if (calibrationStateInputBuffer == "CMD:CANCEL_CALIBRATION") {
         stepper.stop();
@@ -202,7 +196,6 @@ void runCalibrationState() {
       delay(1000);
       for (int i = 0; i < 100; i++) {
         int OD = analogRead(ODPin);
-        Serial.println(OD);
         currentOD += OD;
         delay(10);
       }
@@ -211,13 +204,13 @@ void runCalibrationState() {
       break;
 
     case CAL_TRANSMIT_DATA:
-      Serial1.print("OD:");
-      Serial1.println(currentOD);
+      Serial.print("OD:");
+      Serial.println(currentOD);
 
       channelIterator++;
       if (channelIterator > channels) {
         delay(1000);
-        Serial1.println("CMD:CALIBRATION_FINISHED");
+        Serial.println("CMD:CALIBRATION_FINISHED");
         currentState = IDLE;
         calibrationState = CAL_NONE;
       } else {
@@ -231,27 +224,22 @@ void runCalibrationState() {
 }
 
 void checkReactionStateSerial() {
-  while (Serial1.available()) {
-    char c = Serial1.read();
+  while (Serial.available()) {
+    char c = Serial.read();
 
     if (c == '\n') {
       reactionStateInputBuffer.trim();  // Trim any extra whitespace
-
-//      Serial.println(reactionStateInputBuffer);
 
       if (reactionStateInputBuffer == "CMD:CANCEL_REACTION") {
         stepper.stop();
         reactionState = REACT_NONE;
         currentState = IDLE;
       } else if (reactionStateInputBuffer == "CMD:PAUSE_REACTION") {
-        Serial.println("Pausing");
         currentState = IDLE;
         paused = true;
       } else if (reactionStateInputBuffer.startsWith("AGITATIONS:")) {
         String numberStr = reactionStateInputBuffer.substring(11);  // After "AGITATIONS:"
         targetAgitations = numberStr.toInt();  // Convert to integer
-//        Serial.print("Agitations: ");
-//        Serial.println(targetAgitations);
       }
 
       reactionStateInputBuffer = "";  // Clear buffer for next message
@@ -308,10 +296,10 @@ void runReactionState() {
       reactionState = REACT_TRANSMIT_DATA;
       break;
     case REACT_TRANSMIT_DATA:
-      Serial1.print("OD:");
-      Serial1.print(currentOD);
-      Serial1.print("CH:");
-      Serial1.println(channelIterator);
+      Serial.print("OD:");
+      Serial.print(currentOD);
+      Serial.print("CH:");
+      Serial.println(channelIterator);
 
       channelIterator++;
       if (channelIterator > 50) {
