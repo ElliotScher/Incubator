@@ -3,7 +3,7 @@ import time
 
 class UARTUtil:
     @staticmethod
-    def open_port(port='/dev/ttyS0', baudrate=9600, timeout=1):
+    def open_port(port='/dev/ttyUSB0', baudrate=9600, timeout=1):
         return serial.Serial(port, baudrate, timeout=timeout)
 
     @staticmethod
@@ -21,10 +21,10 @@ class UARTUtil:
 
     @staticmethod
     def send_and_receive(ser, baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
-            if isinstance(data, str):
-                data += '\n'
-                data = data.encode('utf-8')
-            ser.write(data)
-            ser.flush()
-            time.sleep(0.2)
-            return ser.read(response_size).decode('utf-8', errors='ignore')
+        if isinstance(data, str):
+            data += '\n'
+            data = data.encode('utf-8')
+        ser.write(data)
+        ser.flush()
+        time.sleep(0.2)
+        return ser.read(response_size).decode('utf-8', errors='ignore')
