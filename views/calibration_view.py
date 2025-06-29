@@ -226,6 +226,7 @@ class CalibrationView(tk.Frame):
                                 )
                                 od = float(self.tree.item(tree_items[idx], "values")[1])
                                 result_array.append([channel_index, float(number), od])
+                        print(f"Calibration results for run {_ + 1}: {result_array}")
                         results.append(result_array)
                         return
 
