@@ -4,14 +4,12 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
-from util.calibration.calibration_curve import LogarithmicCalibrationCurve
 from util.calibration.calibration_session import CalibrationSession
 from util.uart_util import UARTUtil
 import matplotlib
 
 matplotlib.use("TkAgg")
 import re
-from collections import defaultdict
 import os
 import csv
 from datetime import datetime
@@ -323,7 +321,6 @@ class CalibrationView(tk.Frame):
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side="right", fill="both", expand=True)
-        LogarithmicCalibrationCurve.init(a, b)  # Initialize the curve with log base 10
         return
 
     def save_calibration_to_csv(self, a, b, r_squared):
@@ -331,7 +328,7 @@ class CalibrationView(tk.Frame):
         Saves the calibration parameters to a CSV file with a timestamp.
         Deletes the old calibration file if it exists.
         """
-        filepath = "/tmp/var/incubator/calibrations.csv"
+        filepath = "/var/tmp/incubator/calibration/calibrations.csv"
         try:
             # Ensure the parent directory exists
             os.makedirs(os.path.dirname(filepath), exist_ok=True)

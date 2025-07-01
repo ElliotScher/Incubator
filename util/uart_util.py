@@ -3,7 +3,15 @@ import time
 
 class UARTUtil:
     @staticmethod
-    def open_port(port='/dev/ttyACM1', baudrate=9600, timeout=1):
+    def open_port(port=None, baudrate=9600, timeout=1):
+        if port is None:
+            # Try common ACM ports
+            for p in ['/dev/ttyACM0', '/dev/ttyACM1']:
+                try:
+                    return serial.Serial(p, baudrate, timeout=timeout)
+                except serial.SerialException:
+                    continue
+            raise serial.SerialException("No available /dev/ttyACM0 or /dev/ttyACM1 port found.")
         return serial.Serial(port, baudrate, timeout=timeout)
 
     @staticmethod
