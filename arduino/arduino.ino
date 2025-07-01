@@ -304,6 +304,8 @@ void runReactionState() {
       channelIterator++;
       if (channelIterator > 50) {
         channelIterator = 1;
+        homer.reset();
+        reactionState = REACT_HOME_WHEEL;
       }
 
       if (targetAgitations != 0) {
