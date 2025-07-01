@@ -328,7 +328,7 @@ class CalibrationView(tk.Frame):
         Saves the calibration parameters to a CSV file with a timestamp.
         Deletes the old calibration file if it exists.
         """
-        filepath = "/var/tmp/incubator/calibration/calibrations.csv"
+        filepath = "/var/tmp/incubator/calibration/calibration.csv"
         try:
             # Ensure the parent directory exists
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
