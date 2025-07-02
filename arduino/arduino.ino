@@ -26,6 +26,9 @@ int currentAgitations = 0;
 bool paused = false;
 bool previousPaused = false;
 
+int odone = 0;
+int odtwo = 0;
+
 enum SuperState {
   IDLE,
   TEST_CONNECTION,
@@ -44,7 +47,12 @@ enum CalibrationState {
 
 enum ReactionState {
   REACT_NONE,
-  REACT_
+  REACT_INITIAL_HOME,
+  REACT_MOVE_25,
+  REACT_READ_25,
+  REACT_FULL_REV,
+  REACT_READ_FULL_REV,
+  MOVE_HOME,
   REACT_HOME_WHEEL,
   REACT_AGITATE,
   REACT_MOVE_TO_POSITION,
@@ -61,7 +69,7 @@ String calibrationStateInputBuffer = "";
 String reactionStateInputBuffer = "";
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   stepper.setMaxSpeed(12000);
   stepper.setAcceleration(12000);
   pinMode(pausePin, INPUT_PULLUP);
@@ -267,6 +275,51 @@ void runReactionState() {
       channelIterator = 1;
       homer.reset();
       channelStepper.setCurrentChannel(48);
+      reactionState = REACT_INITIAL_HOME;
+      break;
+    case REACT_INITIAL_HOME:
+      homer.update();
+      if (homer.isHomed()) {
+        homed = true;
+        reactionState = REACT_MOVE_25;
+      }
+      break;
+    case REACT_MOVE_25:
+      channelStepper.moveToChannel(25, CLOCKWISE);
+      delay(1000);
+      reactionState = REACT_READ_25;
+      break;
+    case REACT_READ_25:
+      currentOD = 0;
+      delay(1000);
+      for (int i = 0; i < 100; i++) {
+        currentOD += analogRead(ODPin);
+        delay(10);
+      }
+      currentOD /= 100;
+      odone = currentOD;
+      reactionState = REACT_FULL_REV;
+      break;
+    case REACT_FULL_REV:
+      channelStepper.fullRevolution(CLOCKWISE);
+      delay(1000);
+      reactionState = REACT_READ_FULL_REV;
+      break;
+    case REACT_READ_FULL_REV:
+      currentOD = 0;
+      delay(1000);
+      for (int i = 0; i < 100; i++) {
+        currentOD += analogRead(ODPin);
+        delay(10);
+      }
+      currentOD /= 100;
+      odtwo = currentOD;
+      reactionState = MOVE_HOME;
+      break;
+    case MOVE_HOME:
+      if (odone > odtwo) {
+        channelStepper.fullRevolution(COUNTER_CLOCKWISE);
+      }
       reactionState = REACT_HOME_WHEEL;
       break;
     case REACT_HOME_WHEEL:
@@ -308,6 +361,7 @@ void runReactionState() {
 
       channelIterator++;
       if (channelIterator > 50) {
+        channelStepper.fullRevolution(COUNTER_CLOCKWISE);
         channelIterator = 1;
         homer.reset();
         homed = false;
