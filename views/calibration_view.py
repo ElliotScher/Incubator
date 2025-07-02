@@ -221,6 +221,21 @@ class CalibrationView(tk.Frame):
                         print(f"Calibration results for run {_ + 1}: {result_array}")
                         results.append(result_array)
                         return
+                elif "CMD:CALIBRATION_FINISHED" in line:
+                        modal.grab_release()
+                        modal.destroy()
+                        result_array = []
+                        tree_items = list(self.tree.get_children())
+                        for idx, number in enumerate(received_numbers):
+                            if idx < len(tree_items):
+                                channel_index = int(
+                                    self.tree.item(tree_items[idx], "values")[0]
+                                )
+                                od = float(self.tree.item(tree_items[idx], "values")[1])
+                                result_array.append([channel_index, float(number), od])
+                        print(f"Calibration results for run {_ + 1}: {result_array}")
+                        results.append(result_array)
+                        return
 
                 modal.after(100, poll_uart)
 
