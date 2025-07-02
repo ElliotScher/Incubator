@@ -204,16 +204,13 @@ class CalibrationView(tk.Frame):
 
             def poll_uart():
                 line = UARTUtil.receive_data(self.ser)
-                if line:
-                    line = line.strip()
-                    if "OD:" in line:
-                        try:
-                            print("received: " + line)
-                            number_str = line[3:]
-                            number = float(number_str)
-                            received_numbers.append(number)
-                        except ValueError:
-                            print("Error: " + line)
+                if line.startswith("OD:"):
+                    try:
+                        number_str = line[3:]  # This is now guaranteed to be correct
+                        number = float(number_str)
+                        received_numbers.append(number)
+                    except ValueError:
+                        print("Malformed number in line:", line)
 
                     if "CMD:CALIBRATION_FINISHED" in line:
                         modal.grab_release()
