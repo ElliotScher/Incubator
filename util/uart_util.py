@@ -24,7 +24,7 @@ class UARTUtil:
         time.sleep(0.2)
 
     @staticmethod
-    def receive_line(ser):
+    def receive_data(ser):
         """
         Read one line from the serial port, decode, and strip newline chars.
         """
@@ -32,7 +32,7 @@ class UARTUtil:
         return line
 
     @staticmethod
-    def send_and_receive_line(ser, data='', delay=0.2):
+    def send_and_receive_data(ser, data='', delay=0.2):
         """
         Send data and then read one line of response.
         """
