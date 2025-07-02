@@ -37,13 +37,6 @@ class CalibrationView(tk.Frame):
         )
         button.pack(side="top", anchor="e")
 
-        info_text = "put text here"
-
-        info_label = tk.Label(
-            self, text=info_text, justify="left", fg="black", font=("Arial", 12)
-        )
-        info_label.pack(pady=(0, 10))
-
         # Treeview for calibration data
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill="both", expand=True)
@@ -209,6 +202,7 @@ class CalibrationView(tk.Frame):
                         number_str = line[3:]  # This is now guaranteed to be correct
                         number = float(number_str)
                         received_numbers.append(number)
+                        print("number: " + line)
                     except ValueError:
                         print("Malformed number in line:", line)
 

@@ -51,12 +51,6 @@ class RunView(tk.Frame):
         )
         button.pack(side="top", anchor="e")
 
-        info_text = "Add text here"
-        info_label = tk.Label(
-            self, text=info_text, justify="left", fg="black", font=("Arial", 12)
-        )
-        info_label.pack(pady=(0, 10))
-
         left_frame = tk.Frame(self)
         left_frame.pack(side="left", fill="both", expand=True)
 
