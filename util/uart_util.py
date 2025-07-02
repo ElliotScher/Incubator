@@ -24,22 +24,15 @@ class UARTUtil:
         time.sleep(0.2)
 
     @staticmethod
-    def receive_data(ser):
-        """
-        Read one line from the serial port, decode, and strip newline chars.
-        """
-        line = ser.readline().decode('utf-8', errors='ignore').strip()
-        return line
+    def receive_data(ser, size=64):
+        return ser.read(size).decode('utf-8', errors='ignore')
 
     @staticmethod
-    def send_and_receive_data(ser, data='', delay=0.2):
-        """
-        Send data and then read one line of response.
-        """
+    def send_and_receive(ser, baudrate=9600, data='', timeout=1, response_size=64, delay=0.1):
         if isinstance(data, str):
             data += '\n'
             data = data.encode('utf-8')
         ser.write(data)
         ser.flush()
-        time.sleep(delay)
-        return UARTUtil.receive_line(ser)
+        time.sleep(0.2)
+        return ser.read(response_size).decode('utf-8', errors='ignore')

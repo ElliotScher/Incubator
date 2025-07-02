@@ -197,7 +197,7 @@ class CalibrationView(tk.Frame):
 
             def poll_uart():
                 line = UARTUtil.receive_data(self.ser)
-                if line.startswith("OD:"):
+                if "OD:" in line:
                     try:
                         number_str = line[3:]
                         number = float(number_str)
