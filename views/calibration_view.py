@@ -199,12 +199,13 @@ class CalibrationView(tk.Frame):
                 line = UARTUtil.receive_data(self.ser)
                 if "OD:" in line:
                     try:
-                        number_str = line[3:]
+                        number_str = line[3:].split('\r')[0].split('\n')[0]
                         number = float(number_str)
                         received_numbers.append(number)
                         print("number: " + line)
                     except ValueError as ve:
                         print(f"ValueError: {ve}")
+
                 
                     if "CMD:CALIBRATION_FINISHED" in line:
                         modal.grab_release()
