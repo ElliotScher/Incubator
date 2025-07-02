@@ -71,7 +71,7 @@ String calibrationStateInputBuffer = "";
 String reactionStateInputBuffer = "";
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   stepper.setMaxSpeed(12000);
   stepper.setAcceleration(12000);
   pinMode(pausePin, INPUT_PULLUP);
