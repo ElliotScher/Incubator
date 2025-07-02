@@ -44,6 +44,7 @@ enum CalibrationState {
 
 enum ReactionState {
   REACT_NONE,
+  REACT_
   REACT_HOME_WHEEL,
   REACT_AGITATE,
   REACT_MOVE_TO_POSITION,
@@ -60,16 +61,13 @@ String calibrationStateInputBuffer = "";
 String reactionStateInputBuffer = "";
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   stepper.setMaxSpeed(12000);
   stepper.setAcceleration(12000);
+  pinMode(pausePin, INPUT_PULLUP);
 }
 
 void loop() {
-  if (digitalRead(pausePin) == LOW) {
-    paused = true;
-    currentState = IDLE;
-  }
   switch (currentState) {
     case IDLE:
       runIdleState();
@@ -143,7 +141,7 @@ void checkCalibrationStateSerial() {
     char c = Serial.read();
 
     if (c == '\n') {
-      calibrationStateInputBuffer.trim();  // Trim any extra whitespace
+      calibrationStateInputBuffer.trim();
 
       if (calibrationStateInputBuffer == "CMD:CANCEL_CALIBRATION") {
         stepper.stop();
@@ -256,6 +254,10 @@ void checkReactionStateSerial() {
 
 void runReactionState() {
   checkReactionStateSerial();
+  if (digitalRead(pausePin) == HIGH) {
+    paused = true;
+    currentState = IDLE;
+  }
   if (paused) {
     return;
   }

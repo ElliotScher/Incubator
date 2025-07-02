@@ -3,7 +3,7 @@ import time
 
 class UARTUtil:
     @staticmethod
-    def open_port(port=None, baudrate=9600, timeout=1):
+    def open_port(port=None, baudrate=115200, timeout=1):
         if port is None:
             # Try common ACM ports
             for p in ['/dev/ttyACM0', '/dev/ttyACM1']:
