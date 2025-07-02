@@ -453,6 +453,8 @@ class RunView(tk.Frame):
             elif "RESUME SUCCESSFUL" in line:
                 self.arduino_paused_ack = False
                 self.play_pause_button.config(text="Pause")
+            elif "odone" in line:
+                print(line)
             elif "OD:" in line and "CH:" in line and not self.arduino_paused_ack:
                 try:
                     # Split the line into parts based on the delimiters "OD:" and "CH:"

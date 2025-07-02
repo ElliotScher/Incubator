@@ -11,7 +11,7 @@
 #define motorInterfaceType 1
 
 AccelStepper stepper(motorInterfaceType, stepPin, dirPin);
-StepperHomer homer(stepper, homingPin, 75, 125, 1250, 100);
+StepperHomer homer(stepper, homingPin, 75, 125, 1250, 25);
 ChannelStepper channelStepper(stepper, 50, 48, 500);
 
 
@@ -51,7 +51,9 @@ enum ReactionState {
   REACT_MOVE_25,
   REACT_READ_25,
   REACT_FULL_REV,
-  REACT_READ_FULL_REV,
+  REACT_HOME_AGAIN,
+  REACT_MOVE_25_AGAIN,
+  REACT_READ_25_AGAIN,
   MOVE_HOME,
   REACT_HOME_WHEEL,
   REACT_AGITATE,
@@ -69,7 +71,7 @@ String calibrationStateInputBuffer = "";
 String reactionStateInputBuffer = "";
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   stepper.setMaxSpeed(12000);
   stepper.setAcceleration(12000);
   pinMode(pausePin, INPUT_PULLUP);
@@ -303,9 +305,22 @@ void runReactionState() {
     case REACT_FULL_REV:
       channelStepper.fullRevolution(CLOCKWISE);
       delay(1000);
-      reactionState = REACT_READ_FULL_REV;
+      homer.reset();
+      reactionState = REACT_HOME_AGAIN;
       break;
-    case REACT_READ_FULL_REV:
+    case REACT_HOME_AGAIN:
+      homer.update();
+      if (homer.isHomed()) {
+        homed = true;
+        reactionState = REACT_MOVE_25_AGAIN;
+      }
+      break;
+    case REACT_MOVE_25_AGAIN:
+      channelStepper.moveToChannel(25, CLOCKWISE);
+      delay(1000);
+      reactionState = REACT_READ_25_AGAIN;
+      break;
+    case REACT_READ_25_AGAIN:
       currentOD = 0;
       delay(1000);
       for (int i = 0; i < 100; i++) {
@@ -314,13 +329,18 @@ void runReactionState() {
       }
       currentOD /= 100;
       odtwo = currentOD;
+      homer.reset();
       reactionState = MOVE_HOME;
       break;
     case MOVE_HOME:
+      Serial.print("odone: ");
+      Serial.print(odone);
+      Serial.print(" odtwo: ");
+      Serial.println(odtwo);
       if (odone > odtwo) {
         channelStepper.fullRevolution(COUNTER_CLOCKWISE);
       }
-      reactionState = REACT_HOME_WHEEL;
+      reactionState = REACT_HOME_WHEEL;      
       break;
     case REACT_HOME_WHEEL:
       homer.update();
