@@ -208,11 +208,12 @@ class CalibrationView(tk.Frame):
                     line = line.strip()
                     if "OD:" in line:
                         try:
+                            print("received: " + line)
                             number_str = line[3:]
                             number = float(number_str)
                             received_numbers.append(number)
                         except ValueError:
-                            pass
+                            print("Error: " + line)
 
                     if "CMD:CALIBRATION_FINISHED" in line:
                         modal.grab_release()
