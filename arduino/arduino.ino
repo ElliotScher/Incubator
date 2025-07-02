@@ -6,6 +6,7 @@
 #define dirPin 6
 #define stepPin 5
 #define homingPin 7
+#define pausePin 4
 #define ODPin A1
 #define motorInterfaceType 1
 
@@ -65,6 +66,10 @@ void setup() {
 }
 
 void loop() {
+  if (digitalRead(pausePin) == LOW) {
+    paused = true;
+    currentState = IDLE;
+  }
   switch (currentState) {
     case IDLE:
       runIdleState();
@@ -264,10 +269,8 @@ void runReactionState() {
       break;
     case REACT_HOME_WHEEL:
       homer.update();
-  
       if (homer.isHomed()) {
         homed = true;
-
         reactionState = REACT_MOVE_TO_POSITION;
       }
       break;
@@ -305,10 +308,10 @@ void runReactionState() {
       if (channelIterator > 50) {
         channelIterator = 1;
         homer.reset();
+        homed = false;
         reactionState = REACT_HOME_WHEEL;
-      }
-
-      if (targetAgitations != 0) {
+        channelStepper.setCurrentChannel(48);
+      } else if (targetAgitations != 0) {
         reactionState = REACT_AGITATE;
       } else {
         reactionState = REACT_MOVE_TO_POSITION;
