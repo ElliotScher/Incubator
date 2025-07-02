@@ -573,7 +573,7 @@ class RunView(tk.Frame):
         """
         self.cal_a = None
         self.cal_b = None
-        filepath = "/var/tmp/incubator/calibration/calibration.csv"
+        filepath = "/var/tmp/incubator/calibrations.csv"
 
         try:
             if not os.path.isfile(filepath):

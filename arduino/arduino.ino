@@ -306,6 +306,7 @@ void runReactionState() {
       channelStepper.fullRevolution(CLOCKWISE);
       delay(1000);
       homer.reset();
+      channelStepper.setCurrentChannel(48);
       reactionState = REACT_HOME_AGAIN;
       break;
     case REACT_HOME_AGAIN:
@@ -330,6 +331,7 @@ void runReactionState() {
       currentOD /= 100;
       odtwo = currentOD;
       homer.reset();
+      channelStepper.setCurrentChannel(48);
       reactionState = MOVE_HOME;
       break;
     case MOVE_HOME:
